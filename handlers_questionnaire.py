@@ -86,9 +86,13 @@ def save_questionnaire_responses(institution_name, group_name, member_name_key, 
 
     # Validación: verificar selecciones duplicadas dentro de una misma pregunta
     for data_key, selections in responses_from_ui.items():
-        if len(selections) != len(set(selections)):
-            # Encontramos duplicados
-            counts = collections.Counter(selections)
+        # ¡AQUÍ ESTÁ EL CAMBIO CLAVE!
+        # Filtramos las selecciones para quitar los strings vacíos o "Seleccionar" ANTES de buscar duplicados.
+        actual_selections = [s for s in selections if s and s != 'Seleccionar']
+        
+        if len(actual_selections) != len(set(actual_selections)):
+            # Encontramos duplicados solo entre las selecciones reales
+            counts = collections.Counter(actual_selections)
             first_duplicate = next((item for item, count in counts.items() if count > 1), "desconocido")
             return False, f"Error de validación: Se encontraron selecciones duplicadas de '{first_duplicate}' para una pregunta. Por favor, corrija."
 

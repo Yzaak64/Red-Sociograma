@@ -56,9 +56,12 @@ def get_member_options_for_dropdown(school_name, class_name,
 
     options = []
     if include_all_option:
+        # Para el filtro del sociograma, 'None' sigue siendo correcto.
         options.append(('Todos (Grafo Completo)', None))
     else:
-        options.append(('Seleccionar', None))
+        # Para el cuestionario, hacemos que "Seleccionar" sea una opción real.
+        # El valor interno será un string vacío '' para representar "sin elección".
+        options.append(('Seleccionar', ''))
 
     local_members_data = app_data_ref.members_data
     members_list_all = local_members_data.get(school_name, {}).get(class_name, [])

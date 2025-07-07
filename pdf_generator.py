@@ -987,17 +987,18 @@ def generate_class_summary_report_pdf(institution_name, group_name):
         
         # --- INICIO DE LA MODIFICACIÓN ---
         
-        # 1. Usar el texto de la pregunta para los encabezados
+        # 1. Usar la CATEGORÍA de la pregunta para los encabezados
         for q in pos_q:
-            # Dividimos el texto en palabras y lo reconstruimos con saltos de línea
-            words = q.get('text', 'Pregunta').split()
-            header_text = "Acep.<br/>" + " ".join(words)
+            # Obtenemos la categoría en lugar del texto
+            categoria = q.get('type', 'General')
+            header_text = f"Acep.<br/><b>{categoria}</b>"
             header.append(Paragraph(header_text, styles['Table_Header']))
         header.append(Paragraph("<b>TOTAL<br/>Acep.</b>", styles['Table_Header']))
         
         for q in neg_q:
-            words = q.get('text', 'Pregunta').split()
-            header_text = "Rech.<br/>" + " ".join(words)
+            # Hacemos lo mismo para las negativas
+            categoria = q.get('type', 'General')
+            header_text = f"Rech.<br/><b>{categoria}</b>"
             header.append(Paragraph(header_text, styles['Table_Header']))
         header.append(Paragraph("<b>TOTAL<br/>Rech.</b>", styles['Table_Header']))
         

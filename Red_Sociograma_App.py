@@ -349,7 +349,12 @@ def create_layout_sociomatrix(institution_name, group_name):
             polarity = q_def.get('polarity')
             widget_key = f"-MATRIXQ__{data_key}__"
             
-            q_layout_rows.append([sg.Checkbox(f"({polarity[:3].title()}) {q_def.get('text','')[:80]}...", 
+            # ¡AQUÍ ESTÁ EL CAMBIO CLAVE!
+            # Obtenemos la categoría de la pregunta en lugar del texto completo.
+            categoria = q_def.get('type', 'General')
+            
+            # Creamos el checkbox usando la polaridad y la categoría.
+            q_layout_rows.append([sg.Checkbox(f"({polarity[:3].title()}) {categoria}", 
                                            key=widget_key, default=True)])
     else:
         q_layout_rows = [[sg.Text("No hay preguntas definidas para este grupo.")]]
@@ -989,7 +994,18 @@ def window_questionnaire(institution_name, group_name, member_name):
             break
 
         if event == '-SAVE_Q-':
-            responses = {q['data_key']: [values.get(f"-Q_{q['data_key']}_{i}-") for i in range(q['max_selections']) if values.get(f"-Q_{q['data_key']}_{i}-", '').strip()] for q in q_data.get('questions', [])}
+            responses = {}
+            for q in q_data.get('questions', []):
+                selections = []
+                for i in range(q['max_selections']):
+                    # Obtenemos el valor seleccionado del menú desplegable
+                    value = values.get(f"-Q_{q['data_key']}_{i}-")
+                    
+                    # Guardamos la respuesta SOLO si es un valor real (no un string vacío o None)
+                    if value: 
+                        selections.append(value)
+                        
+                responses[q['data_key']] = selections
             success, msg = hquest.save_questionnaire_responses(institution_name, group_name, member_name, responses)
             sg.popup(msg)
         elif event == '-PDF_TEMPLATE_Q-':

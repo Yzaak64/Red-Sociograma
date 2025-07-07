@@ -71,16 +71,19 @@ def regenerate_relationship_maps_for_class(institution_name, group_name):
             else:
                 polarity_char = "Neu"
             
-            # --- LÍNEA CLAVE MODIFICADA ---
-            # Se usa el texto real de la pregunta para el label que verá el usuario.
-            pregunta_texto = q_def.get('text', q_id)
-            # Se trunca el texto para que no sea excesivamente largo en la UI, añadiendo "..."
-            label_for_map = f"({polarity_char}) {pregunta_texto[:45]}{'...' if len(pregunta_texto) > 45 else ''}"
-            # --- FIN DE LA MODIFICACIÓN ---
+            # --- INICIO DE LA NUEVA LÓGICA ---
+            # Ahora usamos la Categoría/Tipo de la pregunta para el label.
+            # Mantenemos el prefijo de polaridad para que siga siendo útil.
+            # CAMBIO 1: Añadir esta línea para obtener la categoría
+            categoria_pregunta = q_def.get('type', 'General') 
+
+            # CAMBIO 2: Reemplazar 'q_id' por 'categoria_pregunta'
+            label_for_map = f"({polarity_char}) {categoria_pregunta}"
+            # --- FIN DE LA NUEVA LÓGICA ---
 
             # Este mapa se puede usar internamente si se necesita el tipo y la polaridad
             relationship_types_map[data_key] = f"{q_def.get('polarity','neutral').title()} - {q_type_desc}"
-            
+
             # Este es el mapa que usa la UI para generar los checkboxes
             sociogram_relation_options_map[data_key] = label_for_map
             
