@@ -1,0 +1,10 @@
+# GUI y Lógica Principal
+FreeSimpleGUI
+pandas
+numpy
+networkx
+matplotlib
+Pillow
+reportlab
+xhtml2pdf
+cefpython3

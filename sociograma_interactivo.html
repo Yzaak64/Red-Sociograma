@@ -1,0 +1,2740 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Sociograma Interactivo - Colegio "Miguel de Cervantes" / 4to Grado A</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+        
+        <style>
+            body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; }
+            .main-container { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+            #header-legend {
+                flex-shrink: 0; height: 90px;
+                background-color: black; color: white;
+                display: flex; flex-direction: column;
+                justify-content: center; align-items: center;
+                padding: 10px; box-sizing: border-box; z-index: 2;
+            }
+            .header-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+            .symbol-line { font-size: 14px; white-space: nowrap; }
+            .legend-item { margin: 0 12px; }
+            .legend-item > span { font-size: 16px; vertical-align: middle; }
+            .legend-divider { margin: 0 15px; color: #555; }
+            #cy { flex-grow: 1; position: relative; }
+            .print-view { display: none; }
+            #print-image { width: 100%; height: auto; }
+            @media print {
+                .screen-view { display: none !important; }
+                .print-view { display: block !important; }
+                @page { margin: 1cm; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="main-container screen-view">
+            <div id="header-legend">
+                <div class='header-title'>Colegio "Miguel de Cervantes" / 4to Grado A</div>
+                <div class="symbol-line"><span class='legend-item' style='color:#dc3545;'>→</span> (Neg) Asiento | <span class='legend-item' style='color:#6c757d;'>→</span> (Pos) Tarea Escolar | <span class='legend-item' style='color:#17a2b8;'>→</span> (Pos) Asiento | <span class='legend-item' style='color:#ccc;'>→</span> (Pos) Picnic/Juego | <span class='legend-item'><span style='font-family:monospace;'>- - -</span> Recíproca</span> | <span class='legend-divider'>|</span> | <span class='legend-item'><span style='display:inline-block; height: 4.0px; width: 20px; background-color: white; vertical-align: middle; border-radius: 2px;'></span> 1ra Elección</span> | <span class='legend-item'><span style='display:inline-block; height: 2.5px; width: 20px; background-color: white; vertical-align: middle; border-radius: 2px;'></span> 2da Elección</span></div>
+            </div>
+            <div id="cy"></div>
+            <button onclick="handlePrint()" style="position: absolute; top: 100px; left: 10px; z-index: 10; padding: 8px 12px; cursor: pointer;">Imprimir a PDF</button>
+        </div>
+        <div class="print-view">
+            <img id="print-image" src="" alt="Vista para impresión del sociograma"/>
+        </div>
+        
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var cy = cytoscape({
+                container: document.getElementById('cy'),
+                elements: [
+  {
+    "data": {
+      "id": "Adela Mart\u00ednez",
+      "sexo_attr": "Femenino",
+      "iniz": "AMX",
+      "original_nome": "Adela",
+      "original_cognome": "MART\u00cdNEZ",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "AMX"
+    }
+  },
+  {
+    "data": {
+      "id": "Alicia Bernal",
+      "sexo_attr": "Femenino",
+      "iniz": "ABX",
+      "original_nome": "Alicia",
+      "original_cognome": "BERNAL",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "ABX"
+    }
+  },
+  {
+    "data": {
+      "id": "Carmen Vargas",
+      "sexo_attr": "Femenino",
+      "iniz": "CVX",
+      "original_nome": "Carmen",
+      "original_cognome": "VARGAS",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "CVX"
+    }
+  },
+  {
+    "data": {
+      "id": "Daniela Ben\u00edtez",
+      "sexo_attr": "Femenino",
+      "iniz": "DBX",
+      "original_nome": "Daniela",
+      "original_cognome": "BEN\u00cdTEZ",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "DBX"
+    }
+  },
+  {
+    "data": {
+      "id": "J\u00e9ssica Flores",
+      "sexo_attr": "Femenino",
+      "iniz": "JFX",
+      "original_nome": "J\u00e9ssica",
+      "original_cognome": "FLORES",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "JFX"
+    }
+  },
+  {
+    "data": {
+      "id": "Luisa Ram\u00edrez",
+      "sexo_attr": "Femenino",
+      "iniz": "LRX",
+      "original_nome": "Luisa",
+      "original_cognome": "RAM\u00cdREZ",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "LRX"
+    }
+  },
+  {
+    "data": {
+      "id": "Martina Guti\u00e9rrez",
+      "sexo_attr": "Femenino",
+      "iniz": "MGX",
+      "original_nome": "Martina",
+      "original_cognome": "GUTI\u00c9RREZ",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "MGX"
+    }
+  },
+  {
+    "data": {
+      "id": "\u00c1ngela Aguilar",
+      "sexo_attr": "Femenino",
+      "iniz": "\u00c1AX",
+      "original_nome": "\u00c1ngela",
+      "original_cognome": "AGUILAR",
+      "node_shape": "triangle",
+      "node_color": "lightcoral",
+      "opacity": 1.0,
+      "label": "\u00c1AX"
+    }
+  },
+  {
+    "data": {
+      "id": "Alejandro Rojas",
+      "sexo_attr": "Masculino",
+      "iniz": "ARX",
+      "original_nome": "Alejandro",
+      "original_cognome": "ROJAS",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "ARX"
+    }
+  },
+  {
+    "data": {
+      "id": "Esteban Bravo",
+      "sexo_attr": "Masculino",
+      "iniz": "EBX",
+      "original_nome": "Esteban",
+      "original_cognome": "BRAVO",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "EBX"
+    }
+  },
+  {
+    "data": {
+      "id": "Manuel Navarro",
+      "sexo_attr": "Masculino",
+      "iniz": "MNX",
+      "original_nome": "Manuel",
+      "original_cognome": "NAVARRO",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "MNX"
+    }
+  },
+  {
+    "data": {
+      "id": "Marcos Castillo",
+      "sexo_attr": "Masculino",
+      "iniz": "MCX",
+      "original_nome": "Marcos",
+      "original_cognome": "CASTILLO",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "MCX"
+    }
+  },
+  {
+    "data": {
+      "id": "Mateo Blanco",
+      "sexo_attr": "Masculino",
+      "iniz": "MBX",
+      "original_nome": "Mateo",
+      "original_cognome": "BLANCO",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "MBX"
+    }
+  },
+  {
+    "data": {
+      "id": "Mat\u00edas Vidal",
+      "sexo_attr": "Masculino",
+      "iniz": "MVX",
+      "original_nome": "Mat\u00edas",
+      "original_cognome": "VIDAL",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "MVX"
+    }
+  },
+  {
+    "data": {
+      "id": "Nicol\u00e1s Vel\u00e1zquez",
+      "sexo_attr": "Masculino",
+      "iniz": "NVX",
+      "original_nome": "Nicol\u00e1s",
+      "original_cognome": "VEL\u00c1ZQUEZ",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "NVX"
+    }
+  },
+  {
+    "data": {
+      "id": "\u00d3scar G\u00f3mez",
+      "sexo_attr": "Masculino",
+      "iniz": "\u00d3GX",
+      "original_nome": "\u00d3scar",
+      "original_cognome": "G\u00d3MEZ",
+      "node_shape": "ellipse",
+      "node_color": "skyblue",
+      "opacity": 1.0,
+      "label": "\u00d3GX"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Adela Mart\u00ednez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Adela Mart\u00ednez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Adela Mart\u00ednez",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alicia Bernal",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alicia Bernal",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alicia Bernal",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alicia Bernal",
+      "target": "J\u00e9ssica Flores"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Carmen Vargas",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Carmen Vargas",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Carmen Vargas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Carmen Vargas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Carmen Vargas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Carmen Vargas",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "J\u00e9ssica Flores"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Daniela Ben\u00edtez",
+      "target": "Mat\u00edas Vidal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "J\u00e9ssica Flores",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Mat\u00edas Vidal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Luisa Ram\u00edrez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Mat\u00edas Vidal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Martina Guti\u00e9rrez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00c1ngela Aguilar",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Alejandro Rojas",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Alejandro Rojas",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Adela Mart\u00ednez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alejandro Rojas",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alejandro Rojas",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Alejandro Rojas",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Alejandro Rojas",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Esteban Bravo",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Esteban Bravo",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Esteban Bravo",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Esteban Bravo",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Esteban Bravo",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Luisa Ram\u00edrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Esteban Bravo",
+      "target": "Mat\u00edas Vidal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Manuel Navarro",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Manuel Navarro",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Marcos Castillo",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "\u00d3scar G\u00f3mez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mateo Blanco",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mateo Blanco",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mateo Blanco",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Mateo Blanco",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Mat\u00edas Vidal",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Mat\u00edas Vidal",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Mat\u00edas Vidal",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Manuel Navarro"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Esteban Bravo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Alicia Bernal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Daniela Ben\u00edtez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "Nicol\u00e1s Vel\u00e1zquez",
+      "target": "Daniela Ben\u00edtez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#17a2b8",
+      "line_style": "dashed",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Mateo Blanco"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#17a2b8",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Martina Guti\u00e9rrez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "\u00c1ngela Aguilar"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#6c757d",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Carmen Vargas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 0,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#ccc",
+      "line_style": "dashed",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_asiento_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "dashed",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Marcos Castillo"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_pos",
+      "election_index": 1,
+      "polarity": "positive",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#ccc",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Alejandro Rojas"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Nicol\u00e1s Vel\u00e1zquez"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_trabajo_neg",
+      "election_index": 1,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 2.5,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Mat\u00edas Vidal"
+    }
+  },
+  {
+    "data": {
+      "relation_data_key": "q_juego_neg",
+      "election_index": 0,
+      "polarity": "negative",
+      "opacity": 1.0,
+      "edge_width": 4.0,
+      "edge_color": "#dc3545",
+      "line_style": "solid",
+      "source": "\u00d3scar G\u00f3mez",
+      "target": "Mat\u00edas Vidal"
+    }
+  }
+],
+                style: [
+                    { selector: 'node', style: { 'background-color': 'data(node_color)', 'shape': 'data(node_shape)', 'label': 'data(label)', 'width': 50, 'height': 50, 'font-size': 10, 'color': 'black', 'text-valign': 'center', 'text-halign': 'center', 'border-width': 2, 'border-color': '#333', 'opacity': 'data(opacity)' } },
+                    { selector: 'edge', style: { 'width': 'data(edge_width)', 'line-color': 'data(edge_color)', 'target-arrow-color': 'data(edge_color)', 'line-style': 'data(line_style)', 'opacity': 'data(opacity)', 'target-arrow-shape': 'triangle', 'curve-style': 'bezier' } }
+                ],
+                layout: { name: 'cose', animate: true, animationDuration: 500, padding: 30, fit: true }
+            });
+
+            async function handlePrint() {
+                const printButton = document.querySelector('button');
+                printButton.style.display = 'none';
+
+                // Capturar el cuerpo entero, ya que ahora contiene la disposición correcta
+                const fullViewElement = document.querySelector('.main-container');
+
+                try {
+                    const canvas = await html2canvas(fullViewElement, { scale: 2, logging: false });
+                    const printImageElement = document.getElementById('print-image');
+                    printImageElement.src = canvas.toDataURL('image/png', 1.0);
+
+                    setTimeout(() => {
+                        window.print();
+                        printButton.style.display = 'block';
+                    }, 100);
+
+                } catch (error) {
+                    console.error('Error al generar la imagen para impresión:', error);
+                    alert('Hubo un error al preparar la impresión.');
+                    printButton.style.display = 'block';
+                }
+            }
+            window.handlePrint = handlePrint;
+        });
+    </script>
+    </body></html>
+    
