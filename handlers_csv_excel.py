@@ -7,6 +7,45 @@ from sociograma_data import schools_data, classes_data, members_data, questionna
 import pdf_generator
 
 # --- Funciones de Utilidad (sin cambios) ---
+def generar_categoria_desde_texto(texto_pregunta):
+    """
+    Analiza el texto de una pregunta para generar automáticamente una categoría
+    corta y descriptiva, eligiendo la palabra más significativa.
+    """
+    if not texto_pregunta or not isinstance(texto_pregunta, str):
+        return "General"
+
+    # Lista de palabras comunes (stop words) en español a ignorar
+    stop_words = set([
+        'a', 'al', 'con', 'cual', 'cuales', 'de', 'del', 'dos', 'el', 'en', 
+        'indica', 'la', 'las', 'los', 'mas', 'nombres', 'o', 'para', 'por', 
+        'que', 'quien', 'quienes', 'se', 'si', 'sin', 'si pudieras', 'si tuvieras',
+        'sus', 'un', 'una', 'unos', 'unas', 'y', 'companeros', 'companero'
+    ])
+
+    # 1. Limpiar el texto: minúsculas, sin acentos ni puntuación
+    s = texto_pregunta.lower().strip()
+    s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+    s = re.sub(r'[^a-z\s]', '', s)
+
+    # 2. Separar en palabras y filtrar las que no son útiles
+    palabras = s.split()
+    palabras_significativas = [p for p in palabras if p not in stop_words and len(p) > 3]
+
+    # 3. Si no quedan palabras significativas, usar un fallback
+    if not palabras_significativas:
+        # Si no hay palabras largas, intenta con las cortas que no sean stop words
+        palabras_cortas = [p for p in palabras if p not in stop_words]
+        if not palabras_cortas:
+            return "General" # Fallback final si la pregunta es muy genérica
+        else:
+            palabras_significativas = palabras_cortas
+    
+    # 4. Elegir la palabra más larga como la más descriptiva
+    categoria = max(palabras_significativas, key=len)
+    
+    # 5. Formatear y devolver (primera letra en mayúscula y truncado por seguridad)
+    return categoria.capitalize()[:15]
 
 def parse_nombre_apellido(nombre_completo_str):
     partes = nombre_completo_str.strip().split()
@@ -203,8 +242,8 @@ def _validate_import_request():
 
 def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None):
     """
-    VERSIÓN CORREGIDA: Asegura que la validación se ejecute SIEMPRE antes
-    de cualquier otra decisión lógica.
+    Etapa 1 de la importación: Valida y prepara los datos para la confirmación del usuario,
+    incluyendo polaridad Y una categoría sugerida para cada nueva pregunta.
     """
     try:
         reader = csv.DictReader(io.StringIO(csv_content_string))
@@ -214,11 +253,11 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
     except Exception as e:
         return {'status': 'error', 'message': f"Error crítico al leer el contenido del CSV: {e}"}
 
-    # 1. Iniciar sesión y parsear cabeceras
     _start_import_session(import_options, csv_data, ui_context)
     _import_session['counters']['filas_leidas'] = len(csv_data)
 
     headers = list(csv_data[0].keys())
+    # ... (el resto del parseo de headers no cambia)
     id_cols = ["Marca temporal", "Dirección de correo electrónico", "Institucion", "Grupo", "Nombre y Apellido", "Sexo", "Fecha De Nacimiento"]
     last_id_idx = -1
     for col in reversed(id_cols):
@@ -237,15 +276,14 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
             else:
                 _log(f"El encabezado de columna '{col}' no sigue el formato de pregunta y será ignorado.", 'warning')
 
-    # 2. --- VALIDACIÓN PREVIA (SE EJECUTA SIEMPRE PRIMERO) ---
+
     is_valid, error_message = _validate_import_request()
     if not is_valid:
-        # Si la validación falla, nos detenemos aquí y devolvemos el error.
         return {'status': 'error', 'message': error_message}
-    # Si la validación pasa, continuamos.
+        
+    # --- INICIO DE LA MODIFICACIÓN ---
+    _import_session['questions_needing_confirmation'] = {} # Renombrado para mayor claridad
 
-    # 3. Detección de preguntas nuevas para confirmación de polaridad
-    # (Este código es el mismo, pero ahora se ejecuta DESPUÉS de la validación)
     if import_options.get('import_defs_preguntas', False) and _import_session['parsed_questions']:
         first_row = csv_data[0]
         inst_csv = first_row.get("Institucion", "").strip()
@@ -257,25 +295,27 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
             for preg_base, _ in _import_session['parsed_questions'].items():
                 data_key = generar_data_key_desde_texto(preg_base)
                 if data_key not in defs_grupo_ref:
-                    _import_session['questions_needing_polarity'][preg_base] = {'data_key': data_key}
+                    # Generamos una categoría sugerida para facilitar la vida al usuario
+                    sugerencia_categoria = generar_categoria_desde_texto(preg_base)
+                    _import_session['questions_needing_confirmation'][preg_base] = {
+                        'data_key': data_key,
+                        'suggested_category': sugerencia_categoria
+                    }
 
-    # 4. Decisión final de la Etapa 1
-    if _import_session['questions_needing_polarity']:
-        # Hay preguntas nuevas, se necesita intervención del usuario
+    if _import_session['questions_needing_confirmation']:
         return {
-            'status': 'needs_polarity_confirmation',
-            'message': 'Se necesita definir la polaridad de las nuevas preguntas.',
-            'data_for_confirmation': _import_session['questions_needing_polarity']
+            'status': 'needs_user_confirmation', # Nuevo estado más descriptivo
+            'message': 'Se necesita definir la polaridad y categoría de las nuevas preguntas.',
+            'data_for_confirmation': _import_session['questions_needing_confirmation']
         }
     else:
-        # No hay preguntas nuevas o no se están importando defs.
-        # Como la validación ya pasó, es seguro llamar a finalize_import.
         return finalize_import({})
+    # --- FIN DE LA MODIFICACIÓN ---
 
-# --- FUNCIÓN FINALIZE_IMPORT COMPLETA Y ROBUSTA ---
-def finalize_import(confirmed_polarities):
+def finalize_import(confirmed_details):
     """
-    Finaliza la importación, asignando un orden secuencial a las preguntas nuevas.
+    Finaliza la importación, usando la polaridad y la categoría
+    confirmadas manualmente por el usuario para cada nueva pregunta.
     """
     global _import_session
     if not _import_session:
@@ -323,32 +363,40 @@ def finalize_import(confirmed_polarities):
                     classes_data.setdefault(target_inst, []).append({"name": target_grp, "coordinator": "Importado"})
                     _import_session['counters']['grupos_creados'] += 1
 
-            # --- LÓGICA DE PREGUNTAS CON ORDEN SECUENCIAL ---
+            # --- LÓGICA DE PREGUNTAS CON DATOS CONFIRMADOS POR USUARIO ---
             if options.get('import_defs_preguntas'):
                 defs = get_class_question_definitions(target_inst, target_grp)
                 
-                # Calcular el siguiente número de orden disponible
                 orden_actual_max = -1
                 if defs:
                     ordenes_existentes = [q.get('order', -1) for q in defs.values() if isinstance(q.get('order'), int)]
                     if ordenes_existentes:
                         orden_actual_max = max(ordenes_existentes)
-                
                 siguiente_orden = orden_actual_max + 1
 
                 if options.get('add_new_questions_only'):
                     for preg, opts in _import_session['parsed_questions'].items():
                         data_key = generar_data_key_desde_texto(preg)
                         if data_key not in defs:
-                            polaridad = confirmed_polarities.get(data_key, 'positive')
+                            # Obtener los detalles confirmados por el usuario
+                            details = confirmed_details.get(data_key, {
+                                'polarity': 'positive',  # Fallback
+                                'category': generar_categoria_desde_texto(preg) # Fallback inteligente
+                            })
+                            polaridad_confirmada = details['polarity']
+                            categoria_confirmada = details['category']
+                            
                             defs[data_key] = {
-                                "text": preg, "type": "Importado", "polarity": polaridad,
-                                "data_key": data_key, "max_selections": len(opts),
-                                "order": siguiente_orden, # Asignar orden secuencial
+                                "text": preg,
+                                "type": categoria_confirmada, # Usa la categoría del usuario
+                                "polarity": polaridad_confirmada, # Usa la polaridad del usuario
+                                "data_key": data_key,
+                                "max_selections": len(opts),
+                                "order": siguiente_orden,
                                 "allow_self_selection": options.get('allow_self_selection_new', False)
                             }
                             _import_session['counters']['defs_preguntas_creadas'] += 1
-                            siguiente_orden += 1 # Incrementar para la siguiente
+                            siguiente_orden += 1
                 else:
                     _log(f"Procesando grupo '{target_grp}' con preguntas coincidentes (modo no-agregar).", 'info')
 
@@ -457,7 +505,7 @@ def finalize_import(confirmed_polarities):
                 _import_session['counters']['respuestas_importadas'] += 1
 
     # --- Generación del resumen final ---
-    summary = f"Importación completada.\n" + "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in _import_session['counters'].items()])
+    summary = f"Importación completada.\n" + "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in _import_session['counters'].items() if v > 0])
     if _import_session['errors']:
         summary += f"\n\nErrores ({len(_import_session['errors'])}):\n" + "\n".join(_import_session['errors'])
     if _import_session['warnings']:
