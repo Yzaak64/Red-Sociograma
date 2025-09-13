@@ -1,4 +1,4 @@
-# popapp.py (Versión de Aislamiento Total - Recomendada)
+# popapp.py (Versión con Scrollbars)
 
 import tkinter as tk
 from tkinter import ttk
@@ -29,8 +29,9 @@ def show_coffee_popup():
     """
     Muestra una ventana emergente en su propia instancia de Tkinter,
     bloqueando la ejecución del script principal hasta que se cierre.
+    Ahora incluye scrollbars para pantallas pequeñas.
     """
-    print("[LOG] Iniciando show_coffee_popup (Aislamiento Total).")
+    print("[LOG] Iniciando show_coffee_popup (Aislamiento Total con Scroll).")
     
     # 1. Crear una instancia de Tkinter temporal y ocultarla inmediatamente.
     temp_root = tk.Tk()
@@ -42,6 +43,9 @@ def show_coffee_popup():
         popup = tk.Toplevel(temp_root)
         popup.title("Apoya este Proyecto")
         
+        # Se establece un tamaño mínimo para la ventana
+        popup.minsize(350, 300)
+
         def on_close_popup():
             """Función para cerrar el popup y terminar el bucle de eventos temporal."""
             print("[LOG] Popup cerrado. Destruyendo la instancia temporal de Tkinter.")
@@ -51,11 +55,41 @@ def show_coffee_popup():
         # Asigna la función de cierre al botón 'X' de la ventana
         popup.protocol("WM_DELETE_WINDOW", on_close_popup)
         
-        # --- Contenido de la ventana ---
-        popup_frame = ttk.Frame(popup, padding="20")
-        popup_frame.pack(expand=True, fill=tk.BOTH)
+        # --- INICIO DEL CAMBIO: Estructura para Scrollbars ---
+        
+        # Contenedor principal que se expandirá con la ventana
+        main_frame = ttk.Frame(popup)
+        main_frame.pack(expand=True, fill=tk.BOTH)
+        main_frame.grid_rowconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
 
-        # Puedes usar un emoji o un texto simple
+        # Crear el Canvas y las Scrollbars
+        canvas = tk.Canvas(main_frame)
+        v_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Colocar los widgets en el grid
+        canvas.grid(row=0, column=0, sticky="nsew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+
+        # Crear el frame INTERNO que contendrá todo el contenido
+        # Este frame es ahora un hijo del Canvas
+        popup_frame = ttk.Frame(canvas, padding="20")
+        
+        # Colocar el frame interno sobre el canvas
+        canvas.create_window((0, 0), window=popup_frame, anchor="nw")
+
+        # Función para actualizar la región de scroll cuando el contenido cambie de tamaño
+        def update_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        popup_frame.bind("<Configure>", update_scroll_region)
+
+        # --- FIN DEL CAMBIO ---
+
+        # --- Contenido de la ventana (se añade al 'popup_frame' interno) ---
         ttk.Label(popup_frame, text="❤️", font=("Segoe UI Emoji", 20)).pack(pady=(0, 5))
         
         support_text = "Si esta herramienta te resulta útil, considera apoyar su desarrollo futuro."
@@ -66,13 +100,11 @@ def show_coffee_popup():
         image_path = resource_path("Buy_Coffe.png")
 
         try:
-            # Usar imagen si Pillow está disponible y el archivo existe
             if PIL_AVAILABLE and os.path.exists(image_path):
                 img = Image.open(image_path)
                 img.thumbnail((300, 100), Image.Resampling.LANCZOS)
                 popup.coffee_photo = ImageTk.PhotoImage(img) 
                 
-                # Usamos un botón de Tkinter normal para un mejor control
                 coffee_button = tk.Button(
                     popup_frame, 
                     image=popup.coffee_photo, 
@@ -82,7 +114,6 @@ def show_coffee_popup():
                 )
                 coffee_button.pack(pady=10)
             else:
-                # Botón de texto como alternativa
                 fallback_button = ttk.Button(
                     popup_frame, 
                     text="☕ Invítame un café", 
@@ -105,22 +136,20 @@ def show_coffee_popup():
 
         # --- Centrar la ventana y hacerla visible ---
         popup.update_idletasks()
-        p_width = popup.winfo_width()
-        p_height = popup.winfo_height()
+        # Establecer un tamaño inicial razonable
+        initial_width = 450
+        initial_height = 400
         s_width = popup.winfo_screenwidth()
         s_height = popup.winfo_screenheight()
-        x = (s_width // 2) - (p_width // 2)
-        y = (s_height // 2) - (p_height // 2)
-        popup.geometry(f"{p_width}x{p_height}+{x}+{y}")
+        x = (s_width // 2) - (initial_width // 2)
+        y = (s_height // 2) - (initial_height // 2)
+        popup.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
         
-        # Comandos para asegurar que la ventana sea visible y tenga el foco
         popup.attributes('-topmost', True)
         popup.deiconify()
         popup.focus_force()
         popup.grab_set()
 
-        # 3. Iniciar el bucle de eventos para la instancia temporal.
-        #    Esto detiene la ejecución del script principal aquí.
         print("[LOG] Iniciando bucle de eventos del popup.")
         temp_root.mainloop()
         print("[LOG] Bucle de eventos del popup finalizado.")
@@ -128,11 +157,9 @@ def show_coffee_popup():
     except Exception as e:
         print(f"ERROR FATAL en show_coffee_popup: {e}")
         traceback.print_exc()
-        # Asegurarse de destruir la raíz temporal si algo falla
         if 'temp_root' in locals() and temp_root.winfo_exists():
             temp_root.destroy()
 
-# Esta sección permite probar el popup por sí solo
 if __name__ == '__main__':
     print("Ejecutando popapp.py como script independiente para prueba.")
     show_coffee_popup()
