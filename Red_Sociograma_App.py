@@ -5,6 +5,7 @@
 # --- BLOQUE 1: IMPORTACIONES (Sin cambios) ---
 import sys, os, collections, functools, io, re, traceback, datetime, unicodedata, csv, json
 import FreeSimpleGUI as sg
+import tkinter as tk
 import subprocess
 import pandas
 import numpy as np
@@ -765,26 +766,23 @@ def window_confirm_import_details(questions_to_confirm):
 
 # --- BLOQUE 4.2: Ventana de Gestión de CSV ---
 
-def window_csv_management(ui_context):
+def window_csv_management(ui_context, tk_parent_window):
     """
     Lanza y gestiona la ventana de Importación/Exportación de CSV, incluyendo la lógica
     para todos los checkboxes de importación granular. La ventana inicia maximizada.
+    
+    AHORA ACEPTA tk_parent_window para pasarlo a los diálogos de Tkinter.
     """
     layout = create_layout_csv_management()
-    # Se añade resizable=True para que la ventana pueda ser redimensionada
     window = sg.Window("Gestión de Datos CSV", layout, modal=True, finalize=True, resizable=True)
-    # Se maximiza la ventana al iniciar
     window.maximize()
     
-    # Variable para indicar si se debe refrescar la ventana principal al cerrar
     data_was_imported = False
     
     def load_all_groups():
-        """Carga y ordena todos los grupos para la lista de exportación."""
         all_groups = [f"{inst} / {group['name']}" for inst, groups in app_data.classes_data.items() for group in groups]
         window['-CSV_OUT_GROUPS-'].update(values=sorted(all_groups))
 
-    # Cargar los grupos al iniciar la ventana
     load_all_groups()
 
     while True:
@@ -804,30 +802,19 @@ def window_csv_management(ui_context):
             is_enabled = values['-CSV_OPT_RESPS-']
             window['-CSV_OPT_CREATE_MENTIONED-'].update(disabled=not is_enabled)
             
-        # --- Lógica para el botón de instrucciones PDF ---
         elif event == '-PDF_INSTRUCTIONS-':
+            # ... (esta parte no cambia)
             pdf_bytes, result_or_error = hcsv.handle_generate_instructions_pdf()
-            
             if pdf_bytes:
                 try:
                     base_dir = os.path.dirname(os.path.abspath(__file__))
                     save_path = os.path.join(base_dir, result_or_error) 
-                    
-                    with open(save_path, 'wb') as f:
-                        f.write(pdf_bytes)
-                    
-                    sg.popup_ok(
-                        f"El manual de usuario ha sido generado y guardado en:\n\n{save_path}\n\nSe abrirá a continuación.",
-                        title="Manual Generado"
-                    )
+                    with open(save_path, 'wb') as f: f.write(pdf_bytes)
+                    sg.popup_ok(f"El manual de usuario ha sido generado y guardado en:\n\n{save_path}\n\nSe abrirá a continuación.", title="Manual Generado")
                     webbrowser.open_new(f"file://{save_path}")
+                except Exception as e: sg.popup_error(f"Error al guardar o abrir el manual:\n{e}")
+            else: sg.popup_error(f"No se pudo generar el PDF del manual:\n{result_or_error}")
 
-                except Exception as e:
-                    sg.popup_error(f"Error al guardar o abrir el manual:\n{e}")
-            else:
-                sg.popup_error(f"No se pudo generar el PDF del manual:\n{result_or_error}")
-
-        # --- Lógica para el botón de procesar CSV (importación) ---
         elif event == '-CSV_PROCESS-':
             filepath = values['-CSV_IN_PATH-']
             if not filepath or not os.path.exists(filepath):
@@ -837,69 +824,42 @@ def window_csv_management(ui_context):
                 with open(filepath, 'r', encoding='utf-8-sig') as f: csv_content = f.read()
                 
                 import_options = {
-                    'import_escuelas': values['-CSV_OPT_INST-'], 
-                    'import_grupos': values['-CSV_OPT_GRP-'], 
-                    'import_miembros_nominadores': values['-CSV_OPT_MEMB_NOMINATORS-'], 
-                    'import_defs_preguntas': values['-CSV_OPT_DEFS-'], 
-                    'import_respuestas': values['-CSV_OPT_RESPS-'],
-                    'add_new_questions_only': values['-CSV_OPT_ADD_Q_ONLY-'],
-                    'allow_self_selection_new': values['-CSV_OPT_SELF-'],
-                    'expand_max_selections': values['-CSV_OPT_EXPAND-'],
+                    'import_escuelas': values['-CSV_OPT_INST-'], 'import_grupos': values['-CSV_OPT_GRP-'], 
+                    'import_miembros_nominadores': values['-CSV_OPT_MEMB_NOMINATORS-'], 'import_defs_preguntas': values['-CSV_OPT_DEFS-'], 
+                    'import_respuestas': values['-CSV_OPT_RESPS-'], 'add_new_questions_only': values['-CSV_OPT_ADD_Q_ONLY-'],
+                    'allow_self_selection_new': values['-CSV_OPT_SELF-'], 'expand_max_selections': values['-CSV_OPT_EXPAND-'],
                     'create_mentioned_members': values['-CSV_OPT_CREATE_MENTIONED-']
                 }
                 
-                result_stage1 = hcsv.handle_csv_import_stage1(csv_content, import_options, ui_context=ui_context)
+                # --- CAMBIO CLAVE: Pasamos 'tk_parent_window' a la función orquestadora ---
+                final_result = hcsv.run_full_csv_import_flow(tk_parent_window, csv_content, import_options, ui_context)
                 
-                final_result = None
-                if result_stage1.get('status') == 'needs_user_confirmation':
-                    # Llamamos a la nueva ventana de confirmación
-                    confirmed_details = window_confirm_import_details(result_stage1['data_for_confirmation'])
-                    
-                    if confirmed_details is not None:
-                        # Pasamos los detalles completos (polaridad y categoría)
-                        final_result = hcsv.finalize_import(confirmed_details)
-                    else:
-                        sg.popup("Importación cancelada por el usuario.")
-                
-                elif result_stage1.get('status') == 'error_question_mismatch':
-                    sg.popup_error(result_stage1.get('message'), title="Desajuste de Preguntas")
-                    final_result = None
-                
-                else:
-                    final_result = result_stage1
-
                 if final_result and final_result.get('status') == 'success':
                     sg.popup_scrolled(final_result['message'], title="Resultado de Importación")
                     data_was_imported = True
-                elif final_result:
-                    sg.popup_error(final_result.get('message', 'Ocurrió un error desconocido durante la importación.'))
+                elif final_result and final_result.get('status') == 'error':
+                    sg.popup_error(final_result.get('message', 'Ocurrió un error.'))
+                # Si es 'cancelled', no se muestra nada.
 
             except Exception as e:
                 sg.popup_error(f"Error al procesar el archivo CSV: {e}\n\n{traceback.format_exc()}")
-
-        # --- Lógica para el botón de exportación CSV ---
+        
         elif event == '-CSV_EXPORT-':
+            # ... (esta parte no cambia)
             selected_groups_str = values['-CSV_OUT_GROUPS-']
-            if not selected_groups_str:
-                sg.popup_error("Por favor, selecciona al menos un grupo para exportar.")
-                continue
-            
+            if not selected_groups_str: sg.popup_error("Por favor, selecciona al menos un grupo para exportar."); continue
             groups_to_export = [tuple(s.split(' / ')) for s in selected_groups_str]
             success, data_to_write = hcsv.handle_prepare_data_for_csv_export(groups_to_export)
-            
             if success:
                 save_path = sg.popup_get_file("Guardar Exportación CSV", save_as=True, default_extension=".csv", file_types=(("CSV Files", "*.csv"),))
                 if save_path:
                     try:
                         with open(save_path, 'w', newline='', encoding='utf-8') as f:
-                            writer = csv.writer(f)
-                            writer.writerows(data_to_write)
+                            writer = csv.writer(f); writer.writerows(data_to_write)
                         sg.popup("Exportación completada exitosamente.")
                     except Exception as e: sg.popup_error(f"Error al guardar el archivo: {e}")
-            else:
-                sg.popup_error(data_to_write[0][0])
+            else: sg.popup_error(data_to_write[0][0])
             
-        # --- Lógica para cargar la lista de grupos para exportar ---
         elif event == '-CSV_LOAD_GROUPS-':
             load_all_groups()
     
@@ -1685,6 +1645,13 @@ class SociogramaApp:
             '-VIEW_QUESTIONNAIRE-', '-VIEW_QUESTIONS-', '-VIEW_SOCIOGRAM-',
             '-VIEW_MATRIX-', '-VIEW_DIANA-'
         ]
+        
+        # --- CAMBIO CLAVE: Crear y ocultar la ventana raíz de Tkinter ---
+        # Esta ventana invisible servirá como "parent" para todos los diálogos de Tkinter.
+        self.tk_root = tk.Tk()
+        self.tk_root.withdraw()
+        # --- FIN DEL CAMBIO ---
+
         self.window = self._create_main_window()
 
     def _create_main_window(self):
@@ -1940,8 +1907,9 @@ class SociogramaApp:
                 if success:
                     self.refresh_institutions_list()
         elif event == '-MANAGE_CSV-':
-            if window_csv_management({'school': selected_inst, 'group': None}):
-                log_message("Datos importados, refrescando la lista de instituciones.")
+            # --- CAMBIO CLAVE: Pasamos self.tk_root como segundo argumento ---
+            if window_csv_management({'school': selected_inst, 'group': None}, self.tk_root):
+                log_message("Datos importados, refrescando instituciones.")
                 self.refresh_institutions_list()
 
     def handle_groups_events(self, event, values):

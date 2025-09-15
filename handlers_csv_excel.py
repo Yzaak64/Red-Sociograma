@@ -1,5 +1,9 @@
 # handlers_csv_excel.py
 # (v2.2 - Versión final y completa.
+# --- AÑADE ESTAS DOS LÍNEAS AQUÍ ---
+import tkinter as tk
+from tkinter import ttk
+# --- FIN DE LAS LÍNEAS A AÑADIR ---
 #  Implementa toda la lógica de creación de instituciones, grupos y miembros.)
 
 import collections, traceback, csv, io, re, unicodedata, datetime
@@ -7,6 +11,117 @@ from sociograma_data import schools_data, classes_data, members_data, questionna
 import pdf_generator
 
 # --- Funciones de Utilidad (sin cambios) ---
+
+# Archivo: dialog_test.py
+# Ejecútalo para probar la ventana de forma aislada.
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# --- ESTA ES LA CLASE DEFINITIVA Y AUTOCONTENIDA ---
+# Una vez que confirmes que funciona, la copiaremos a tu proyecto.
+
+class ConfirmQuestionsDialog(tk.Toplevel):
+    """
+    Versión FINAL y CORREGIDA. Arregla el error 'bad option "-pr"'.
+    """
+    def __init__(self, parent, questions_data):
+        super().__init__(parent)
+        
+        self.grab_set()
+        
+        self.title("Confirmar Detalles de Importación")
+        self.geometry("850x600")
+        self.minsize(600, 400)
+        self.resizable(True, True) 
+        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
+
+        self.result = None
+        self.question_widgets = []
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        self._create_widgets(questions_data)
+        
+        self.wait_window(self)
+
+    def _create_widgets(self, questions_data):
+        main_frame = ttk.Frame(self, padding="15")
+        main_frame.grid(row=0, column=0, sticky="nsew")
+        main_frame.grid_rowconfigure(1, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
+
+        header_frame = ttk.Frame(main_frame)
+        header_frame.grid(row=0, column=0, sticky='ew', pady=(0, 15))
+        
+        ttk.Label(header_frame, text="Confirmar Detalles de Nuevas Preguntas", font=("-size 14 -weight bold")).pack(anchor='w')
+        ttk.Label(
+            header_frame, 
+            text="Para cada pregunta, confirma su polaridad (márcala si es positiva) y edita la categoría sugerida si es necesario.",
+            justify=tk.LEFT
+        ).pack(anchor='w', pady=(5, 0))
+
+        scroll_container = ttk.Frame(main_frame)
+        scroll_container.grid(row=1, column=0, sticky='nsew')
+        scroll_container.grid_rowconfigure(0, weight=1)
+        scroll_container.grid_columnconfigure(0, weight=1)
+
+        canvas = tk.Canvas(scroll_container, borderwidth=0, highlightthickness=0)
+        v_scrollbar = ttk.Scrollbar(scroll_container, orient="vertical", command=canvas.yview)
+        h_scrollbar = ttk.Scrollbar(scroll_container, orient="horizontal", command=canvas.xview)
+        canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+
+        v_scrollbar.grid(row=0, column=1, sticky='ns')
+        h_scrollbar.grid(row=1, column=0, sticky='ew')
+        canvas.grid(row=0, column=0, sticky='nsew')
+
+        scrollable_frame = ttk.Frame(canvas, padding="10")
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+        for i, (text, details) in enumerate(questions_data.items()):
+            data_key = details['data_key']
+            if i > 0:
+                ttk.Separator(scrollable_frame).pack(fill='x', expand=True, pady=15)
+            
+            card = ttk.Frame(scrollable_frame)
+            card.pack(fill='x', expand=True)
+            
+            ttk.Label(card, text=f'Pregunta: "{text}"').pack(anchor='w', pady=(0, 8))
+            
+            polarity_var = tk.BooleanVar(value=True)
+            ttk.Checkbutton(card, text="Es una pregunta Positiva (de aceptación)", variable=polarity_var).pack(anchor='w', padx=20)
+            
+            category_var = tk.StringVar(value=details['suggested_category'])
+            category_frame = ttk.Frame(card)
+            category_frame.pack(fill='x', expand=True, padx=20, pady=8)
+            
+            # --- AQUÍ ESTÁ LA LÍNEA CORREGIDA ---
+            ttk.Label(category_frame, text="Categoría:").pack(side=tk.LEFT, padx=(0, 5))
+            # --- FIN DE LA CORRECCIÓN ---
+            
+            ttk.Entry(category_frame, textvariable=category_var, width=30).pack(side=tk.LEFT)
+
+            self.question_widgets.append((data_key, polarity_var, category_var))
+
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=2, column=0, sticky='e', pady=(15, 0))
+        ttk.Button(button_frame, text="Cancelar", command=self._on_cancel).pack(side=tk.RIGHT, padx=(10, 0))
+        ttk.Button(button_frame, text="Confirmar e Importar", command=self._on_confirm).pack(side=tk.RIGHT)
+
+    def _on_confirm(self):
+        confirmed_data = {}
+        for data_key, polarity_var, category_var in self.question_widgets:
+            polarity = 'positive' if polarity_var.get() else 'negative'
+            confirmed_data[data_key] = {'polarity': polarity, 'category': category_var.get().strip() or "General"}
+        self.result = confirmed_data
+        self.destroy()
+
+    def _on_cancel(self):
+        self.result = None
+        self.destroy()
+
 def generar_categoria_desde_texto(texto_pregunta):
     """
     Analiza el texto de una pregunta para generar automáticamente una categoría
@@ -239,6 +354,28 @@ def _validate_import_request():
 
     _log("--- VALIDACIÓN PREVIA SUPERADA ---", 'debug')
     return True, "Validación exitosa."
+
+def run_full_csv_import_flow(parent_window, csv_content_string, import_options, ui_context=None):
+    """
+    Orquesta todo el proceso de importación, mostrando la ventana de confirmación si es necesario.
+    Esta es la única función que debes llamar desde el botón "Importar CSV" de tu aplicación.
+    """
+    result_stage1 = handle_csv_import_stage1(csv_content_string, import_options, ui_context)
+    
+    if result_stage1.get('status') == 'needs_user_confirmation':
+        dialog = ConfirmQuestionsDialog(parent_window, result_stage1['data_for_confirmation'])
+        confirmed_details = dialog.result
+
+        if confirmed_details is None:
+            return {'status': 'cancelled', 'message': 'Importación cancelada por el usuario.'}
+        
+        return finalize_import(confirmed_details)
+
+    elif result_stage1.get('status') == 'error':
+        return result_stage1
+    
+    else:
+        return finalize_import({})
 
 def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None):
     """
