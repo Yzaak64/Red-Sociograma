@@ -1423,7 +1423,7 @@ def window_sociogram(institution_name, group_name):
                 webbrowser.open(f'file:///{os.path.abspath(result_path)}')
                 sg.popup_ok("El sociograma se ha abierto en tu navegador web.", "Éxito")
             else:
-                sg.popup_error("No se pudo generar el archivo del sociograma.")
+                sg.popup_error("No se pudo generar el archivo del sociograma.(Recuerde abrir la aplicacion como administrador)")
             
     window.close()
     return action, data
