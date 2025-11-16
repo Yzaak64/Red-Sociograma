@@ -2,7 +2,7 @@
 
 Esta es una aplicación de escritorio completa, desarrollada con Python y FreeSimpleGUI, para la creación, gestión y análisis de datos sociométricos. Permite visualizar las dinámicas de grupo a través de sociogramas interactivos, matrices sociométricas y dianas de afinidad.
 
-Esta nueva version contiene analisis para auto-percepcion y para elecciones reales
+Esta nueva version contiene analisis para auto-percepcion y para elecciones reales (esta version no se encuentra en colab solo en el ejecutable).
 
 ## Características
 
