@@ -7,7 +7,7 @@ from tkinter import ttk
 #  Implementa toda la lógica de creación de instituciones, grupos y miembros.)
 
 import collections, traceback, csv, io, re, unicodedata, datetime
-from sociograma_data import schools_data, classes_data, members_data, questionnaire_responses_data, get_class_question_definitions
+from sociograma_data import schools_data, classes_data, members_data, questionnaire_responses_data, get_class_question_definitions, cognitive_social_structures_data
 import pdf_generator
 
 # --- Funciones de Utilidad (sin cambios) ---
@@ -23,27 +23,23 @@ from tkinter import ttk, messagebox
 
 class ConfirmQuestionsDialog(tk.Toplevel):
     """
-    Versión FINAL y CORREGIDA. Arregla el error 'bad option "-pr"'.
+    Versión FINAL. Mantiene el campo "Categoría" pero lo deshabilita para
+    preguntas de meta-percepción. Permite confirmar la polaridad de todas
+    las preguntas nuevas y adivina la polaridad de las negativas.
     """
     def __init__(self, parent, questions_data):
         super().__init__(parent)
-        
         self.grab_set()
-        
         self.title("Confirmar Detalles de Importación")
         self.geometry("850x600")
         self.minsize(600, 400)
         self.resizable(True, True) 
         self.protocol("WM_DELETE_WINDOW", self._on_cancel)
-
         self.result = None
         self.question_widgets = []
-
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-
         self._create_widgets(questions_data)
-        
         self.wait_window(self)
 
     def _create_widgets(self, questions_data):
@@ -54,13 +50,8 @@ class ConfirmQuestionsDialog(tk.Toplevel):
 
         header_frame = ttk.Frame(main_frame)
         header_frame.grid(row=0, column=0, sticky='ew', pady=(0, 15))
-        
         ttk.Label(header_frame, text="Confirmar Detalles de Nuevas Preguntas", font=("-size 14 -weight bold")).pack(anchor='w')
-        ttk.Label(
-            header_frame, 
-            text="Para cada pregunta, confirma su polaridad (márcala si es positiva) y edita la categoría sugerida si es necesario.",
-            justify=tk.LEFT
-        ).pack(anchor='w', pady=(5, 0))
+        ttk.Label(header_frame, text="Para cada pregunta, confirma su polaridad y edita la categoría sugerida si es necesario.", justify=tk.LEFT).pack(anchor='w', pady=(5, 0))
 
         scroll_container = ttk.Frame(main_frame)
         scroll_container.grid(row=1, column=0, sticky='nsew')
@@ -69,11 +60,8 @@ class ConfirmQuestionsDialog(tk.Toplevel):
 
         canvas = tk.Canvas(scroll_container, borderwidth=0, highlightthickness=0)
         v_scrollbar = ttk.Scrollbar(scroll_container, orient="vertical", command=canvas.yview)
-        h_scrollbar = ttk.Scrollbar(scroll_container, orient="horizontal", command=canvas.xview)
-        canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
-
+        canvas.configure(yscrollcommand=v_scrollbar.set)
         v_scrollbar.grid(row=0, column=1, sticky='ns')
-        h_scrollbar.grid(row=1, column=0, sticky='ew')
         canvas.grid(row=0, column=0, sticky='nsew')
 
         scrollable_frame = ttk.Frame(canvas, padding="10")
@@ -82,27 +70,31 @@ class ConfirmQuestionsDialog(tk.Toplevel):
 
         for i, (text, details) in enumerate(questions_data.items()):
             data_key = details['data_key']
+            is_meta = details.get('is_meta', False) # Obtener si es de meta-percepción
+            
             if i > 0:
                 ttk.Separator(scrollable_frame).pack(fill='x', expand=True, pady=15)
             
             card = ttk.Frame(scrollable_frame)
             card.pack(fill='x', expand=True)
-            
             ttk.Label(card, text=f'Pregunta: "{text}"').pack(anchor='w', pady=(0, 8))
             
-            polarity_var = tk.BooleanVar(value=True)
+            negative_keywords = ['rechazo', 'rechazas', 'evitar', 'evitarías', 'no invitar', 'no querrías']
+            is_likely_positive = not any(keyword in text.lower() for keyword in negative_keywords)
+            polarity_var = tk.BooleanVar(value=is_likely_positive)
+            
             ttk.Checkbutton(card, text="Es una pregunta Positiva (de aceptación)", variable=polarity_var).pack(anchor='w', padx=20)
             
-            category_var = tk.StringVar(value=details['suggested_category'])
+            # --- INICIO DE LA MODIFICACIÓN ---
+            category_var = tk.StringVar(value=details.get('suggested_category', 'General'))
             category_frame = ttk.Frame(card)
             category_frame.pack(fill='x', expand=True, padx=20, pady=8)
-            
-            # --- AQUÍ ESTÁ LA LÍNEA CORREGIDA ---
             ttk.Label(category_frame, text="Categoría:").pack(side=tk.LEFT, padx=(0, 5))
-            # --- FIN DE LA CORRECCIÓN ---
             
-            ttk.Entry(category_frame, textvariable=category_var, width=30).pack(side=tk.LEFT)
-
+            entry = ttk.Entry(category_frame, textvariable=category_var, width=30)
+            entry.pack(side=tk.LEFT)
+            # --- FIN DE LA MODIFICACIÓN ---
+            
             self.question_widgets.append((data_key, polarity_var, category_var))
 
         button_frame = ttk.Frame(main_frame)
@@ -111,11 +103,10 @@ class ConfirmQuestionsDialog(tk.Toplevel):
         ttk.Button(button_frame, text="Confirmar e Importar", command=self._on_confirm).pack(side=tk.RIGHT)
 
     def _on_confirm(self):
-        confirmed_data = {}
+        self.result = {}
         for data_key, polarity_var, category_var in self.question_widgets:
             polarity = 'positive' if polarity_var.get() else 'negative'
-            confirmed_data[data_key] = {'polarity': polarity, 'category': category_var.get().strip() or "General"}
-        self.result = confirmed_data
+            self.result[data_key] = {'polarity': polarity, 'category': category_var.get().strip() or "General"}
         self.destroy()
 
     def _on_cancel(self):
@@ -379,8 +370,8 @@ def run_full_csv_import_flow(parent_window, csv_content_string, import_options, 
 
 def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None):
     """
-    Etapa 1 de la importación: Valida y prepara los datos para la confirmación del usuario,
-    incluyendo polaridad Y una categoría sugerida para cada nueva pregunta.
+    Etapa 1 MODIFICADA. Ahora pide confirmación para TODAS las preguntas nuevas,
+    incluyendo las de meta-percepción, y pasa la información 'is_meta' al diálogo.
     """
     try:
         reader = csv.DictReader(io.StringIO(csv_content_string))
@@ -394,7 +385,6 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
     _import_session['counters']['filas_leidas'] = len(csv_data)
 
     headers = list(csv_data[0].keys())
-    # ... (el resto del parseo de headers no cambia)
     id_cols = ["Marca temporal", "Dirección de correo electrónico", "Institucion", "Grupo", "Nombre y Apellido", "Sexo", "Fecha De Nacimiento"]
     last_id_idx = -1
     for col in reversed(id_cols):
@@ -404,23 +394,35 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
     
     if last_id_idx != -1:
         question_columns = headers[last_id_idx + 1:]
-        parser = re.compile(r"^(.*?)\s*\[(?:Opcion|Opción|Eleccion|Elección)\s*(\d+)\s*\]$", re.IGNORECASE)
+        
+        parser = re.compile(r"^(.*?)\s*\[(?P<type>Opcion|Opción|Eleccion|Elección|Percepcion|Percepción)\s*(\d+)\s*\]$", re.IGNORECASE)
+        _import_session['parsed_questions'] = {}
+
         for col in question_columns:
             match = parser.match(col)
             if match:
                 question_text = match.group(1).strip()
-                _import_session['parsed_questions'][question_text].append({'col_header': col, 'option_num': int(match.group(2))})
+                question_type_word = match.group('type').lower()
+                option_num = int(match.group(3))
+
+                if question_text not in _import_session['parsed_questions']:
+                    _import_session['parsed_questions'][question_text] = {
+                        'options': [],
+                        'is_meta': 'percep' in question_type_word
+                    }
+                
+                _import_session['parsed_questions'][question_text]['options'].append({
+                    'col_header': col, 
+                    'option_num': option_num
+                })
             else:
                 _log(f"El encabezado de columna '{col}' no sigue el formato de pregunta y será ignorado.", 'warning')
-
 
     is_valid, error_message = _validate_import_request()
     if not is_valid:
         return {'status': 'error', 'message': error_message}
         
-    # --- INICIO DE LA MODIFICACIÓN ---
-    _import_session['questions_needing_confirmation'] = {} # Renombrado para mayor claridad
-
+    _import_session['questions_needing_confirmation'] = {}
     if import_options.get('import_defs_preguntas', False) and _import_session['parsed_questions']:
         first_row = csv_data[0]
         inst_csv = first_row.get("Institucion", "").strip()
@@ -429,19 +431,23 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
         
         if target_inst:
             defs_grupo_ref = get_class_question_definitions(target_inst, grp_csv)
-            for preg_base, _ in _import_session['parsed_questions'].items():
+            for preg_base, preg_data in _import_session['parsed_questions'].items():
                 data_key = generar_data_key_desde_texto(preg_base)
                 if data_key not in defs_grupo_ref:
-                    # Generamos una categoría sugerida para facilitar la vida al usuario
-                    sugerencia_categoria = generar_categoria_desde_texto(preg_base)
+                    is_meta = preg_data['is_meta']
+                    # Generar categoría: Fija si es meta, dinámica si no.
+                    sugerencia = '[Meta-Percepción]' if is_meta else generar_categoria_desde_texto(preg_base)
+                    
+                    # Preparar la información para el diálogo de confirmación
                     _import_session['questions_needing_confirmation'][preg_base] = {
                         'data_key': data_key,
-                        'suggested_category': sugerencia_categoria
+                        'suggested_category': sugerencia,
+                        'is_meta': is_meta  # Pasar esta información al diálogo
                     }
 
     if _import_session['questions_needing_confirmation']:
         return {
-            'status': 'needs_user_confirmation', # Nuevo estado más descriptivo
+            'status': 'needs_user_confirmation',
             'message': 'Se necesita definir la polaridad y categoría de las nuevas preguntas.',
             'data_for_confirmation': _import_session['questions_needing_confirmation']
         }
@@ -451,8 +457,8 @@ def handle_csv_import_stage1(csv_content_string, import_options, ui_context=None
 
 def finalize_import(confirmed_details):
     """
-    Finaliza la importación, usando la polaridad y la categoría
-    confirmadas manualmente por el usuario para cada nueva pregunta.
+    Versión FINAL Y DEFINITIVA. Asigna el TIPO estructural internamente
+    y guarda la CATEGORÍA temática del usuario por separado, evitando conflictos.
     """
     global _import_session
     if not _import_session:
@@ -500,7 +506,6 @@ def finalize_import(confirmed_details):
                     classes_data.setdefault(target_inst, []).append({"name": target_grp, "coordinator": "Importado"})
                     _import_session['counters']['grupos_creados'] += 1
 
-            # --- LÓGICA DE PREGUNTAS CON DATOS CONFIRMADOS POR USUARIO ---
             if options.get('import_defs_preguntas'):
                 defs = get_class_question_definitions(target_inst, target_grp)
                 
@@ -512,43 +517,48 @@ def finalize_import(confirmed_details):
                 siguiente_orden = orden_actual_max + 1
 
                 if options.get('add_new_questions_only'):
-                    for preg, opts in _import_session['parsed_questions'].items():
+                    for preg, preg_data in _import_session['parsed_questions'].items():
                         data_key = generar_data_key_desde_texto(preg)
                         if data_key not in defs:
-                            # Obtener los detalles confirmados por el usuario
-                            details = confirmed_details.get(data_key, {
-                                'polarity': 'positive',  # Fallback
-                                'category': generar_categoria_desde_texto(preg) # Fallback inteligente
-                            })
-                            polaridad_confirmada = details['polarity']
-                            categoria_confirmada = details['category']
-                            
-                            defs[data_key] = {
+                            details = confirmed_details.get(data_key, {})
+                            polaridad_confirmada = details.get('polarity', 'positive')
+                            categoria_confirmada = details.get('category', generar_categoria_desde_texto(preg))
+                            is_meta = preg_data['is_meta']
+
+                            new_def = {
                                 "text": preg,
-                                "type": categoria_confirmada, # Usa la categoría del usuario
-                                "polarity": polaridad_confirmada, # Usa la polaridad del usuario
                                 "data_key": data_key,
-                                "max_selections": len(opts),
+                                "max_selections": len(preg_data['options']),
                                 "order": siguiente_orden,
-                                "allow_self_selection": options.get('allow_self_selection_new', False)
+                                "allow_self_selection": options.get('allow_self_selection_new', False),
+                                "polarity": polaridad_confirmada,
+                                
+                                # 1. El 'type' (Tipo Estructural) se asigna internamente.
+                                "type": '[Meta-Percepción]' if is_meta else '[Acción Real]',
+                                
+                                # 2. La 'category' (Categoría Temática) es la que el usuario define.
+                                "category": categoria_confirmada,
+                                
+                                # 3. Los flags internos se mantienen consistentes.
+                                "is_cognitive": is_meta,
+                                "perceived_nominator": '[SELF]' if is_meta else None
                             }
+                            
+                            defs[data_key] = new_def
                             _import_session['counters']['defs_preguntas_creadas'] += 1
                             siguiente_orden += 1
-                else:
-                    _log(f"Procesando grupo '{target_grp}' con preguntas coincidentes (modo no-agregar).", 'info')
 
                 if options.get('expand_max_selections'):
-                    for preg, opts in _import_session['parsed_questions'].items():
+                    for preg, preg_data in _import_session['parsed_questions'].items():
                         data_key = generar_data_key_desde_texto(preg)
-                        if data_key in defs and len(opts) > defs[data_key].get('max_selections', 0):
-                             defs[data_key]['max_selections'] = len(opts)
+                        if data_key in defs and len(preg_data['options']) > defs[data_key].get('max_selections', 0):
+                             defs[data_key]['max_selections'] = len(preg_data['options'])
                              _import_session['counters']['defs_preguntas_max_sel_expandido'] += 1
 
             processed_groups_for_defs.add(group_key)
             
-    # --- BUCLE 2: CREACIÓN DE MIEMBROS (CON LÓGICA DE NUMERACIÓN SECUENCIAL) ---
+    # --- BUCLE 2: CREACIÓN DE MIEMBROS ---
     last_row_index = -1
-    
     if options.get('import_miembros_nominadores', False):
         for row_index, row in enumerate(csv_data):
             inst_csv, grp_csv, full_name = row.get("Institucion", "").strip(), row.get("Grupo", "").strip(), row.get("Nombre y Apellido", "").strip()
@@ -567,40 +577,25 @@ def finalize_import(confirmed_details):
                 members_data.setdefault(inst_csv, {}).setdefault(grp_csv, []).append(new_member)
                 group_members_cache[group_key].add(normalized_name)
                 _import_session['counters']['miembros_nominadores_creados'] += 1
-            
             last_row_index = row_index
 
     siguiente_numero_disponible = last_row_index + 2
-    
     if options.get('create_mentioned_members', False):
-        todos_los_mencionados = set()
-        for row in csv_data:
-            mentioned_names = {v.strip() for k, v in row.items() if "Opcion" in k and v.strip()}
-            todos_los_mencionados.update(mentioned_names)
-
+        todos_los_mencionados = {v.strip() for row in csv_data for k, v in row.items() if ("Opcion" in k or "Percepcion" in k) and v.strip()}
         for full_name in sorted(list(todos_los_mencionados)):
             normalized_name = normalizar_nombre_para_comparacion(full_name)
-            
-            ya_existe = any(normalized_name in cache for cache in group_members_cache.values())
-            
-            if not ya_existe:
+            if not any(normalized_name in cache for cache in group_members_cache.values()):
                 primer_grupo_procesado = next(iter(processed_groups_for_defs), None)
                 if not primer_grupo_procesado: continue
                 inst_csv, grp_csv = primer_grupo_procesado
-
                 nombre, apellido = parse_nombre_apellido(full_name)
-                
                 iniciales = generar_iniciales_con_fila(nombre, apellido, siguiente_numero_disponible)
                 siguiente_numero_disponible += 1
-
                 new_member = {"cognome": apellido.upper(), "nome": nombre.title(), "sexo": "Desconocido", "fecha_nac": "", "iniz": iniciales, "annotations": "Creado por mención en CSV"}
                 members_data.setdefault(inst_csv, {}).setdefault(grp_csv, []).append(new_member)
-                
                 group_key = (inst_csv, grp_csv)
-                if group_key not in group_members_cache:
-                     group_members_cache[group_key] = set()
+                if group_key not in group_members_cache: group_members_cache[group_key] = set()
                 group_members_cache[group_key].add(normalized_name)
-
                 _import_session['counters']['miembros_mencionados_creados'] += 1
 
     # --- BUCLE 3: IMPORTACIÓN DE RESPUESTAS ---
@@ -613,36 +608,39 @@ def finalize_import(confirmed_details):
             target_grp = grp_csv
             if not options.get('import_grupos', False) and not any(g.get('name') == grp_csv for g in classes_data.get(target_inst, [])): continue
 
-            respuestas_miembro = {}
+            respuestas_miembro_directas = {}
+            respuestas_miembro_cognitivas = collections.defaultdict(list)
             defs_grupo_actual = get_class_question_definitions(target_inst, target_grp)
             
-            for preg, opts in _import_session['parsed_questions'].items():
+            for preg, preg_data in _import_session['parsed_questions'].items():
+                opts = preg_data['options']
+                is_meta = preg_data['is_meta']
                 data_key = generar_data_key_desde_texto(preg)
                 q_def = defs_grupo_actual.get(data_key)
                 if not q_def: continue
 
                 elecciones_originales = [row.get(op['col_header'], '').strip() for op in opts if row.get(op['col_header'], '').strip()]
-                
-                elecciones_filtradas = []
-                if q_def.get('allow_self_selection', True):
-                    elecciones_filtradas = elecciones_originales
-                else:
-                    nominator_normalizado = normalizar_nombre_para_comparacion(nominator)
-                    for eleccion in elecciones_originales:
-                        if normalizar_nombre_para_comparacion(eleccion) != nominator_normalizado:
-                            elecciones_filtradas.append(eleccion)
-                        else:
-                            _log(f"Auto-elección de '{nominator}' omitida para pregunta '{preg}' (no permitida).", 'warning')
+                elecciones_filtradas = [e for e in elecciones_originales if normalizar_nombre_para_comparacion(e) != normalizar_nombre_para_comparacion(nominator)] if not q_def.get('allow_self_selection', True) else elecciones_originales
                 
                 if elecciones_filtradas:
-                    respuestas_miembro[data_key] = list(dict.fromkeys(elecciones_filtradas))[:q_def.get('max_selections', len(opts))]
+                    elecciones_finales = list(dict.fromkeys(elecciones_filtradas))[:q_def.get('max_selections', len(opts))]
+                    if is_meta:
+                        respuestas_miembro_cognitivas[data_key] = elecciones_finales
+                    else:
+                        respuestas_miembro_directas[data_key] = elecciones_finales
             
-            if respuestas_miembro:
-                questionnaire_responses_data[(target_inst, target_grp, nominator)] = respuestas_miembro
+            if respuestas_miembro_directas:
+                questionnaire_responses_data[(target_inst, target_grp, nominator)] = respuestas_miembro_directas
                 _import_session['counters']['respuestas_importadas'] += 1
+            if respuestas_miembro_cognitivas:
+                cognitive_key = (target_inst, target_grp, nominator)
+                perceiver_all_perceptions = cognitive_social_structures_data.setdefault(cognitive_key, collections.defaultdict(dict))
+                for dk, noms in respuestas_miembro_cognitivas.items():
+                    perceiver_all_perceptions[dk][nominator] = noms
+                _import_session['counters']['respuestas_cognitivas_importadas'] += 1
 
     # --- Generación del resumen final ---
-    summary = f"Importación completada.\n" + "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in _import_session['counters'].items() if v > 0])
+    summary = "Importación completada.\n" + "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in _import_session['counters'].items() if v > 0])
     if _import_session['errors']:
         summary += f"\n\nErrores ({len(_import_session['errors'])}):\n" + "\n".join(_import_session['errors'])
     if _import_session['warnings']:
@@ -652,30 +650,100 @@ def finalize_import(confirmed_details):
 
 
 def handle_prepare_data_for_csv_export(groups_to_export):
-    if not groups_to_export: return False, [["Error: No se seleccionaron grupos."]]
+    """
+    Versión con LOGS DE DEPURACIÓN. Imprime en consola los datos que encuentra
+    para cada miembro durante el proceso de exportación para identificar por qué
+    las celdas de respuesta aparecen vacías.
+    """
+    print("\n--- [LOG-EXPORT] INICIANDO PROCESO DE EXPORTACIÓN A CSV ---")
+    if not groups_to_export:
+        print("[LOG-EXPORT] Error: No se seleccionaron grupos.")
+        return False, [["Error: No se seleccionaron grupos."]]
+    
     try:
-        max_selections, question_texts = collections.defaultdict(int), {}
-        for inst, grp in groups_to_export:
-            for dk, qd in get_class_question_definitions(inst, grp).items():
-                max_selections[dk] = max(max_selections[dk], qd.get('max_selections', 0))
-                if dk not in question_texts: question_texts[dk] = qd.get('text', dk)
-        
-        sorted_dks = sorted(list(max_selections.keys()))
-        question_headers = [f"{question_texts.get(dk, dk)} [Opcion {i+1}]" for dk in sorted_dks for i in range(max_selections[dk])]
-        header = ["Institucion", "Grupo", "Nombre y Apellido", "Sexo", "Fecha De Nacimiento"] + question_headers
-        all_rows = [header]
+        # --- 1. Recolectar TODA la información de las preguntas ---
+        max_selections = collections.defaultdict(int)
+        question_info = {}
 
         for inst, grp in groups_to_export:
+            # Iteramos sobre los valores (las definiciones de pregunta), no sobre los items
+            for qd in get_class_question_definitions(inst, grp).values():
+                # La clave que nos interesa es la data_key
+                dk = qd.get('data_key')
+                if not dk: continue # Ignorar si no hay data_key
+
+                max_selections[dk] = max(max_selections[dk], qd.get('max_selections', 0))
+                if dk not in question_info:
+                    is_meta = qd.get('is_cognitive', False) and qd.get('perceived_nominator') == '[SELF]'
+                    question_info[dk] = {
+                        'text': qd.get('text', dk),
+                        'is_meta': is_meta
+                    }
+        
+        sorted_dks = sorted(list(max_selections.keys()))
+        print(f"[LOG-EXPORT] Claves de preguntas a exportar (ordenadas): {sorted_dks}")
+
+        # --- 2. Construir los encabezados dinámicamente ---
+        question_headers = []
+        for dk in sorted_dks:
+            info = question_info[dk]
+            header_type = "Percepcion" if info['is_meta'] else "Opcion"
+            for i in range(max_selections[dk]):
+                question_headers.append(f"{info['text']} [{header_type} {i+1}]")
+
+        header = ["Institucion", "Grupo", "Nombre y Apellido", "Sexo", "Fecha De Nacimiento"] + question_headers
+        all_rows = [header]
+        print(f"[LOG-EXPORT] Encabezados generados ({len(header)} columnas).")
+
+        # --- 3. Poblar las filas buscando en AMBAS fuentes de datos ---
+        print("\n--- [LOG-EXPORT] Procesando miembros y sus respuestas ---")
+        for inst, grp in groups_to_export:
+            print(f"\n[LOG-EXPORT] Grupo actual: {inst} / {grp}")
             for member in members_data.get(inst, {}).get(grp, []):
                 full_name = f"{member.get('nome','').title()} {member.get('cognome','').title()}"
+                print(f"  - Procesando miembro: {full_name}")
+                
                 row = [inst, grp, full_name, member.get('sexo', ''), member.get('fecha_nac', '')]
-                responses = questionnaire_responses_data.get((inst, grp, full_name), {})
+                
+                # --- LOGS CLAVE: Verificar las claves de búsqueda ---
+                direct_response_key = (inst, grp, full_name)
+                cognitive_response_key = (inst, grp, full_name)
+                
+                print(f"    Buscando acciones reales con la clave: {direct_response_key}")
+                direct_responses = questionnaire_responses_data.get(direct_response_key, {})
+                if direct_responses:
+                    print(f"      > ¡Encontrado! Datos de acción real: {direct_responses}")
+                else:
+                    print(f"      > No se encontraron datos de acción real.")
+                    
+                print(f"    Buscando meta-percepciones con la clave: {cognitive_response_key}")
+                cognitive_responses = cognitive_social_structures_data.get(cognitive_response_key, {})
+                if cognitive_responses:
+                     print(f"      > ¡Encontrado! Datos de meta-percepción: {cognitive_responses}")
+                else:
+                    print(f"      > No se encontraron datos de meta-percepción.")
+
                 for dk in sorted_dks:
-                    resps = responses.get(dk, [])
+                    info = question_info[dk]
+                    resps = []
+                    
+                    if info['is_meta']:
+                        resps = cognitive_responses.get(dk, {}).get(full_name, [])
+                        print(f"      - Para la pregunta de META-PERCEPCIÓN '{dk}', respuestas encontradas: {resps}")
+                    else:
+                        resps = direct_responses.get(dk, [])
+                        print(f"      - Para la pregunta de ACCIÓN REAL '{dk}', respuestas encontradas: {resps}")
+                    
                     row.extend(resps + [''] * (max_selections[dk] - len(resps)))
+                
                 all_rows.append(row)
+                
+        print("\n--- [LOG-EXPORT] PROCESO DE EXPORTACIÓN FINALIZADO ---")
         return True, all_rows
-    except Exception as e: return False, [[f"Error al exportar: {e}"]]
+    except Exception as e:
+        print(f"[LOG-EXPORT] ERROR FATAL DURANTE LA EXPORTACIÓN: {e}")
+        traceback.print_exc()
+        return False, [[f"Error al exportar: {e}"]]
 
 def handle_generate_instructions_pdf():
     try:

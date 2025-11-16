@@ -1,18 +1,15 @@
 # handlers_questions.py
-# (v18.1 - Refactorizado para aplicación de escritorio.
-#  Usa "Institución"/"Grupo" y "Miembro". Funciones devuelven tuplas (éxito, mensaje/datos).)
+# (v18.4 - Versión final con funciones para Cuestionario Cognitivo)
 
 import collections
 import traceback
 from sociograma_data import (
+    cognitive_social_structures_data, # Importar la nueva estructura
     questionnaire_responses_data,
     regenerate_relationship_maps_for_class,
     get_class_question_definitions,
     members_data
 )
-
-# Nota: Las funciones de logging y auxiliares que antes estaban aquí
-# ahora son responsabilidad de la capa de la GUI (la clase SociogramaApp).
 
 # --- Funciones Lógicas de Gestión de Preguntas ---
 
@@ -100,6 +97,9 @@ def handle_add_question(institution_name, group_name, new_q_data):
     new_q_data es un diccionario con todos los campos de la pregunta.
     Devuelve (éxito, mensaje).
     """
+    # El comentario anterior es incorrecto, el campo 'is_cognitive' SÍ se maneja.
+    # No se elimina ninguna clave aquí.
+
     is_valid, msg = _validate_question_data(institution_name, group_name, new_q_data, is_new=True)
     if not is_valid:
         return False, msg
@@ -122,6 +122,9 @@ def handle_modify_question(institution_name, group_name, original_q_id, updated_
     updated_q_data es un diccionario con los nuevos datos.
     Devuelve (éxito, mensaje).
     """
+    # El comentario anterior es incorrecto, el campo 'is_cognitive' SÍ se maneja.
+    # No se elimina ninguna clave aquí.
+
     current_defs = get_class_question_definitions(institution_name, group_name)
     if original_q_id not in current_defs:
         return False, f"La pregunta original con ID '{original_q_id}' no fue encontrada."
@@ -135,16 +138,13 @@ def handle_modify_question(institution_name, group_name, original_q_id, updated_
         original_data_key = current_defs[original_q_id].get('data_key')
         new_data_key = updated_q_data.get('data_key')
 
-        # Si el ID cambia, hay que eliminar el antiguo y añadir el nuevo
         if new_q_id != original_q_id:
             del current_defs[original_q_id]
         
         current_defs[new_q_id] = updated_q_data
         
-        # Si la data_key cambió, hay que migrar las respuestas guardadas
         if new_data_key != original_data_key:
             for key, responses in questionnaire_responses_data.items():
-                # La clave es (institución, grupo, nombre_miembro)
                 if key[0] == institution_name and key[1] == group_name:
                     if original_data_key in responses:
                         responses[new_data_key] = responses.pop(original_data_key)
@@ -169,12 +169,12 @@ def handle_delete_question(institution_name, group_name, q_id_to_delete):
         q_def_to_delete = current_defs.pop(q_id_to_delete)
         data_key_to_clean = q_def_to_delete.get('data_key')
 
-        # Limpiar las respuestas asociadas a esta data_key
         if data_key_to_clean:
-            for key, responses in questionnaire_responses_data.items():
-                if key[0] == institution_name and key[1] == group_name:
-                    if data_key_to_clean in responses:
-                        del responses[data_key_to_clean]
+            for data_source in [questionnaire_responses_data, cognitive_social_structures_data]:
+                for key, responses in data_source.items():
+                    if key[0] == institution_name and key[1] == group_name:
+                        if data_key_to_clean in responses:
+                            del responses[data_key_to_clean]
         
         regenerate_relationship_maps_for_class(institution_name, group_name)
         
@@ -182,5 +182,45 @@ def handle_delete_question(institution_name, group_name, q_id_to_delete):
     except Exception as e:
         traceback.print_exc()
         return False, f"Error inesperado al eliminar la pregunta: {e}"
+
+# --- INICIO DE LAS NUEVAS FUNCIONES PARA CSS ---
+
+def get_cognitive_questionnaire_data(institution_name, group_name, perceiver_name, perceived_nominator_name):
+    """
+    Recopila las respuestas de percepción guardadas para un perceptor sobre un nominador específico.
+    """
+    cognitive_key = (institution_name, group_name, perceiver_name)
+    perceiver_data = cognitive_social_structures_data.get(cognitive_key, {})
+    
+    saved_responses = {}
+    if perceiver_data:
+        for q_key, perceived_relations in perceiver_data.items():
+            if perceived_nominator_name in perceived_relations:
+                saved_responses[q_key] = perceived_relations[perceived_nominator_name]
+    
+    return saved_responses
+
+def handle_save_cognitive_responses(institution_name, group_name, perceiver_name, perceived_nominator_name, responses_from_ui):
+    """
+    Guarda las respuestas del cuestionario de percepción en la estructura de datos correcta.
+    """
+    if not all([institution_name, group_name, perceiver_name, perceived_nominator_name]):
+        return False, "Faltan datos de contexto para guardar la percepción."
+
+    try:
+        cognitive_key = (institution_name, group_name, perceiver_name)
+        perceiver_all_perceptions = cognitive_social_structures_data.setdefault(cognitive_key, collections.defaultdict(dict))
+        
+        for data_key, nominees in responses_from_ui.items():
+            cleaned_nominees = [n for n in nominees if n and n != 'Seleccionar']
+            perceiver_all_perceptions[data_key][perceived_nominator_name] = cleaned_nominees
+
+        return True, f"Percepción de '{perceiver_name}' sobre '{perceived_nominator_name}' guardada correctamente."
+    
+    except Exception as e:
+        traceback.print_exc()
+        return False, f"Error inesperado al guardar la percepción: {e}"
+
+# --- FIN DE LAS NUEVAS FUNCIONES ---
 
 print("handlers_questions.py refactorizado y listo para su uso en la aplicación de escritorio.")

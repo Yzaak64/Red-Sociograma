@@ -1,6 +1,13 @@
+# --- BLOQUE 1 DE 10: IMPORTACIONES E INICIALIZACIÓN ---
 # =============================================================================
-#  Red_Sociograma_App.py - Versión Final Completa
+#  Red_Sociograma_App.py - Versión de Depuración
 # =============================================================================
+
+# --- ¡¡¡NUEVA LÍNEA DE PRUEBA!!! ---
+print("\n" + "="*50)
+print("--- ¡VERSIÓN DE PRUEBA DE Red_Sociograma_App.py CARGADA! ---")
+print("="*50 + "\n")
+# --- FIN DE LA LÍNEA DE PRUEBA ---
 
 # --- BLOQUE 1: IMPORTACIONES (Sin cambios) ---
 import sys, os, collections, functools, io, re, traceback, datetime, unicodedata, csv, json
@@ -46,7 +53,10 @@ def log_message(message, level='info'):
     timestamp = datetime.datetime.now().strftime('%H:%M:%S')
     print(f"[{timestamp}][{level.upper()}] {message}")
 
-# --- BLOQUE 3: DEFINICIONES DE LAYOUTS ---
+# --- BLOQUE 2 DE 10: LAYOUTS (INSTITUCIONES, GRUPOS, MIEMBROS) ---
+# =============================================================================
+#  BLOQUE 3: DEFINICIONES DE LAYOUTS
+# =============================================================================
 
 def create_layout_institutions():
     form_frame = sg.Frame("", [
@@ -67,17 +77,10 @@ def create_layout_institutions():
         [sg.Button("Ver Grupos", key='-NAV_TO_GROUPS-', disabled=True), sg.Button("Importar/Exportar...", key='-MANAGE_CSV-'), sg.Push(), sg.Button("Salir App", key='-EXIT-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se añade 'scrollable=True' a la columna que contiene el contenido principal
     layout = [
         [form_frame], 
         [sg.Column(main_content, key='-MAIN_INST_COL-', expand_x=True, expand_y=True, scrollable=True)]
     ]
-    return layout
-
-def create_layout_form_institution(is_new=True, initial_data=None):
-    d = initial_data or {}
-    title = "Nueva Institución" if is_new else f"Modificar Institución"
-    layout = [[sg.Text(title, font=("Helvetica", 14))], [sg.Text("Nombre:", size=(12, 1)), sg.Input(d.get('name', ''), key='-NAME-')], [sg.Text("Anotaciones:", size=(12, 1)), sg.Multiline(d.get('annotations', ''), size=(40, 5), key='-ANNOT-')], [sg.Submit("Guardar"), sg.Cancel("Cancelar")]]
     return layout
 
 def create_layout_groups(institution_name):
@@ -101,6 +104,15 @@ def create_layout_groups(institution_name):
         [sg.Text("Sostén:", size=(12,1)), sg.Input(key='-GROUP_SOST-', disabled=True, expand_x=True)],
         [sg.Text("Anotaciones:", size=(12,1)), sg.Multiline(key='-GROUP_ANNOT-', size=(28,4), disabled=True, expand_x=True)]
     ]
+    
+    # --- CORRECCIÓN: Botón "Reporte de Precisión" eliminado de esta columna ---
+    analysis_and_reports_column = [
+        [sg.Text("Análisis y Reportes:", font=("Helvetica", 10, "bold"))],
+        [sg.Button("Matriz Sociométrica", key='-NAV_TO_MATRIX-', disabled=True)],
+        [sg.Button("Diana de Afinidad", key='-NAV_TO_DIANA-', disabled=True)],
+        [sg.Button("PDF Resumen Cuestionario", key='-PDF_SUMMARY-', disabled=True)]
+    ]
+
     main_content = [
         [sg.Text(f"Grupos de: {institution_name}", font=("Helvetica", 16), key='-GROUPS_TITLE-')],
         [sg.Column([[sg.Text("Seleccionar Grupo:")], [sg.Listbox(values=[], size=(30, 15), key='-GROUP_SELECT-', enable_events=True, expand_y=True, expand_x=True)]]), 
@@ -109,21 +121,15 @@ def create_layout_groups(institution_name):
         [sg.HorizontalSeparator()], 
         [sg.Column([[sg.Button("Nuevo Grupo", key='-NEW_GROUP-'), sg.Button("Modificar Grupo", key='-MOD_GROUP-', disabled=True), sg.Button("Eliminar Grupo", key='-DEL_GROUP-', disabled=True)], [sg.Button("Ver Miembros", key='-NAV_TO_MEMBERS-', disabled=True), sg.Button("Sociograma", key='-NAV_TO_SOCIOGRAM-', disabled=True)]]), 
          sg.VSeperator(), 
-         sg.Column([[sg.Text("Análisis y Reportes:", font=("Helvetica", 10, "bold"))], [sg.Button("Matriz Sociométrica", key='-NAV_TO_MATRIX-', disabled=True)], [sg.Button("Diana de Afinidad", key='-NAV_TO_DIANA-', disabled=True)], [sg.Button("PDF Resumen Cuestionario", key='-PDF_SUMMARY-', disabled=True)]])], 
+         sg.Column(analysis_and_reports_column)],
         [sg.HorizontalSeparator()],
         [sg.Push(), sg.Button("Volver a Instituciones", key='-BACK_TO_INST-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se añade 'scrollable=True' a la columna que contiene el contenido principal
     layout = [
         [form_frame], 
         [sg.Column(main_content, key='-MAIN_GROUP_COL-', expand_x=True, expand_y=True, scrollable=True)]
     ]
-    return layout
-
-def create_layout_form_group(institution_name, is_new=True, initial_data=None):
-    d = initial_data or {}; title = "Nuevo Grupo" if is_new else "Modificar Grupo"
-    layout = [[sg.Text(title, font=("Helvetica", 14))], [sg.Text(f"Institución: {institution_name}")], [sg.Text("Nombre:", size=(15, 1)), sg.Input(d.get('name', ''), key='-NAME-')], [sg.Text("Coordinador:", size=(15, 1)), sg.Input(d.get('coordinator', ''), key='-COORD-')], [sg.Text("Profesor 2:", size=(15, 1)), sg.Input(d.get('ins2', ''), key='-INS2-')], [sg.Text("Profesor 3:", size=(15, 1)), sg.Input(d.get('ins3', ''), key='-INS3-')], [sg.Text("Sostén:", size=(15, 1)), sg.Input(d.get('sostegno', ''), key='-SOST-')], [sg.Text("Anotaciones:", size=(15, 1)), sg.Multiline(d.get('annotations', ''), size=(35, 4), key='-ANNOT-')], [sg.Submit("Guardar"), sg.Cancel("Cancelar")]]
     return layout
 
 def create_layout_members(institution_name, group_name):
@@ -153,32 +159,39 @@ def create_layout_members(institution_name, group_name):
          sg.Column(details, expand_x=True)], 
         [sg.Button("Nuevo Miembro", key='-NEW_MEMBER-'), sg.Button("Modificar Miembro", key='-MOD_MEMBER-', disabled=True), sg.Button("Eliminar Miembro", key='-DEL_MEMBER-', disabled=True)],
         [sg.HorizontalSeparator()],
-        [sg.Button("Cuestionario", key='-NAV_TO_QUESTIONNAIRE-', disabled=True), sg.Push(), sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')]
+        
+        [sg.Text("Acciones para el Miembro Seleccionado:", font=("Helvetica", 10, "bold"))],
+        [sg.Button("Cuestionario", key='-NAV_TO_QUESTIONNAIRE-', disabled=True, 
+                     tooltip="Abrir el cuestionario unificado (acciones y percepciones) para este miembro.")],
+
+        [sg.Push(), sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se añade 'scrollable=True' a la columna que contiene el contenido principal
     layout = [
         [form_frame], 
         [sg.Column(main_content, key='-MAIN_MEMBER_COL-', expand_x=True, expand_y=True, scrollable=True)]
     ]
     return layout
 
-def create_layout_form_member(is_new=True, initial_data=None):
-    d = initial_data or {}; title = "Nuevo Miembro" if is_new else "Modificar Miembro"
-    layout = [[sg.Text(title, font=("Helvetica", 14))], [sg.Text("Apellido:", size=(15,1)), sg.Input(d.get('cognome', '').title(), key='-COGNOME-')], [sg.Text("Nombre:", size=(15,1)), sg.Input(d.get('nome', '').title(), key='-NOME-')], [sg.Text("Iniciales (3-4):", size=(15,1)), sg.Input(d.get('iniz', ''), key='-INIZ-', size=(10,1))], [sg.Text("Sexo:"), sg.Radio("Masculino", "SEXO", key='-SEXO_M-', default=d.get('sexo') == 'Masculino'), sg.Radio("Femenino", "SEXO", key='-SEXO_F-', default=d.get('sexo') == 'Femenino'), sg.Radio("Desconocido", "SEXO", key='-SEXO_D-', default=d.get('sexo', 'Desconocido') not in ['Masculino', 'Femenino'])], [sg.Text("Fecha Nacimiento:", size=(15,1)), sg.Input(d.get('fecha_nac', ''), key='-DOB-')], [sg.Text("Anotaciones:"), sg.Multiline(d.get('annotations', ''), size=(35,4), key='-ANNOT-')], [sg.Submit("Guardar"), sg.Cancel("Cancelar")]]
-    return layout
+# --- BLOQUE 3 DE 10: LAYOUTS (CUESTIONARIOS, PREGUNTAS, ANÁLISIS) ---
 
 def create_layout_questionnaire(questionnaire_data, member_name, institution_name, group_name):
     """
-    Crea el layout para la ventana INDEPENDIENTE del cuestionario.
+    Crea el layout para la ventana INDEPENDIENTE del cuestionario híbrido.
     Usa el método robusto con VPush para garantizar la funcionalidad de los botones.
     """
     title = f"Cuestionario para: {member_name}"
     subtitle = f"Institución: {institution_name} | Grupo: {group_name}"
 
     header_layout = [
-        [sg.Text(title, font=("Helvetica", 16))],
-        [sg.Text(subtitle, font=("Helvetica", 10))]
+        # Se añaden claves a los textos para poder actualizarlos después
+        [sg.Text(title, font=("Helvetica", 16), key='-QUESTIONNAIRE_TITLE-')],
+        [sg.Text(subtitle, font=("Helvetica", 10), key='-QUESTIONNAIRE_SUBTITLE-')]
+    ]
+    
+    # Este contenedor contendrá las preguntas y se podrá limpiar y rellenar
+    questions_container_layout = [
+        [sg.Column([], key='-QUESTIONNAIRE_CONTENT-', expand_x=True, expand_y=True, scrollable=True, vertical_scroll_only=True)]
     ]
     
     body_rows = []
@@ -189,7 +202,11 @@ def create_layout_questionnaire(questionnaire_data, member_name, institution_nam
     else:
         for q in questionnaire_data['questions']:
             options = [opt[0] for opt in q['options'] if opt[1] not in [None, '']]
-            selections = questionnaire_data['saved_responses'].get(q['data_key'], [])
+            
+            # Ahora, en lugar de buscar en un diccionario general, usamos las selecciones
+            # que vienen pre-cargadas DENTRO de cada objeto de pregunta 'q'.
+            selections = q.get('saved_selections', [])
+            
             rows_for_frame = []
             for i in range(q['max_selections']):
                 default_val = selections[i] if i < len(selections) else 'Seleccionar'
@@ -197,7 +214,14 @@ def create_layout_questionnaire(questionnaire_data, member_name, institution_nam
                     sg.Text(f"Elección {i+1}:", size=(10, 1)),
                     sg.Combo(['Seleccionar'] + options, default_value=default_val, key=f"-Q_{q['data_key']}_{i}-", readonly=True, expand_x=True)
                 ])
+            
+            # El texto de la pregunta 'q['text']' ya viene formateado para indicar si es de percepción
             body_rows.append([sg.Frame(q['text'], rows_for_frame, expand_x=True)])
+
+    # Se actualiza el contenedor con las filas generadas
+    questions_container_layout = [
+        [sg.Column(body_rows, key='-QUESTIONNAIRE_CONTENT-', expand_x=True, expand_y=True, scrollable=True, vertical_scroll_only=True)]
+    ]
 
     footer_layout = [
         [sg.HorizontalSeparator()],
@@ -208,29 +232,43 @@ def create_layout_questionnaire(questionnaire_data, member_name, institution_nam
          sg.Button("Volver a Miembros", key='-BACK_TO_MEMBERS-')]
     ]
 
+    # Estructura final con VPush para mantener los botones fijos en la parte inferior
     layout = [[
         sg.Column(
             header_layout +
-            [[sg.Column(body_rows, expand_x=True, expand_y=True, scrollable=True, vertical_scroll_only=True)]] +
+            questions_container_layout +
             [[sg.VPush()]] +
             footer_layout,
             expand_x=True, expand_y=True
         )
     ]]
+    
     return layout
 
 def create_layout_question_management(institution_name, group_name):
-    layout = [[sg.Text("Gestionar Preguntas", font=("Helvetica", 16))], [sg.Text(f"Para: {group_name} ({institution_name})")], [sg.Listbox(values=[], size=(80, 20), key='-Q_LIST-', enable_events=True)], [sg.Button("Nueva Pregunta", key='-NEW_Q-'), sg.Button("Modificar Pregunta", key='-MOD_Q-', disabled=True), sg.Button("Eliminar Pregunta", key='-DEL_Q-', disabled=True)], [sg.Button("Volver", key='-BACK_TO_Q-')]]
-    return layout
+    """
+    Versión FINAL. Crea el layout para la gestión de preguntas, separando la
+    'Categoría Temática' (editable) del 'Tipo Estructural' (manejado internamente).
+    """
+    cognitive_options_frame = sg.Frame("Opciones Cognitivas", [
+        [sg.Checkbox("Es una pregunta de Meta-Percepción (ej: '¿Quién crees que te elegirá a TI?')",
+                     key='-FORM_Q_IS_META_PERCEPTION-',
+                     tooltip="Marcar si la pregunta es sobre las percepciones del miembro sobre sí mismo.")]
+    ], expand_x=True)
 
-def create_layout_question_management(institution_name, group_name):
     form_frame = sg.Frame("", [
         [sg.Text("", font=("Helvetica", 14), key='-FORM_Q_TITLE-')],
         [sg.Text("ID Único:", size=(20,1)), sg.Input(key='-FORM_Q_ID-')],
-        [sg.Text("Texto Pregunta:", size=(20,1)), sg.Multiline(size=(40,3), key='-FORM_Q_TEXT-')],
-        [sg.Text("Tipo/Categoría:", size=(20,1)), sg.Input(key='-FORM_Q_TYPE-')],
+        [sg.Text("Texto Pregunta (Base):", size=(20,1)), sg.Multiline(size=(40,3), key='-FORM_Q_TEXT-')],
+        
+        # --- CAMBIO CLAVE: Nuevo campo para la categoría temática ---
+        [sg.Text("Categoría Temática:", size=(20,1)), sg.Input(key='-FORM_Q_CATEGORY-', tooltip="Ej: Trabajo, Juego, Amistad")],
+        # El antiguo campo 'Tipo' se ha eliminado del formulario.
+
         [sg.Text("Clave de Datos:", size=(20,1)), sg.Input(key='-FORM_Q_DK-')],
-        [sg.Text("Polaridad:"), sg.Radio("Positiva", "POL", key='-FORM_Q_POL_POS-'), sg.Radio("Negativa", "POL", key='-FORM_Q_POL_NEG-')],
+        [cognitive_options_frame],
+        [sg.HorizontalSeparator()],
+        [sg.Text("Polaridad:"), sg.Radio("Positiva", "POL", default=True, key='-FORM_Q_POL_POS-'), sg.Radio("Negativa", "POL", key='-FORM_Q_POL_NEG-')],
         [sg.Text("Orden:", size=(20,1)), sg.Input(size=(5,1), key='-FORM_Q_ORDER-')],
         [sg.Text("Máx. Selecciones:", size=(20,1)), sg.Input(size=(5,1), key='-FORM_Q_MAX-')],
         [sg.Checkbox("Permitir auto-selección", key='-FORM_Q_SELF-')],
@@ -245,32 +283,28 @@ def create_layout_question_management(institution_name, group_name):
         [sg.Push(), sg.Button("Volver", key='-BACK_TO_Q-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se añade 'scrollable=True' a la columna que contiene el contenido principal
-    layout = [
-        [form_frame], 
-        [sg.Column(main_content, key='-MAIN_Q_COL-', expand_x=True, expand_y=True, scrollable=True)]
-    ]
-    return layout
-
+    return [[form_frame], [sg.Column(main_content, key='-MAIN_Q_COL-', expand_x=True, expand_y=True, scrollable=True)]]
 
 def create_layout_sociogram(institution_name, group_name, relation_options, participant_options):
     """
-    VERSIÓN DEFINITIVA Y CORRECTA: Replica la estructura funcional de la
-    vista de CSV, colocando TODO el contenido, incluyendo los botones,
-    dentro de una única Columna scrollable para garantizar su funcionalidad.
+    Versión FINAL y COMPLETA. Crea el layout para la ventana del Sociograma,
+    incluyendo los controles para todos los modos de agregación de red.
     """
-    log_message(f"Creando layout de Sociograma (v. funcional): {group_name}", 'info')
-
-    # --- Definición de los controles (esta parte no cambia) ---
+    log_message(f"Creando layout de Sociograma para: {group_name}", 'info')
+    
+    # --- Frame 1: Selección de Preguntas ---
     checkboxes_layout = []
     if relation_options:
         checkboxes_layout = [[sg.Checkbox(opt['label'], default=True, key=f"-SOC_REL__{opt['data_key']}__")] for opt in relation_options]
     else:
         checkboxes_layout = [[sg.Text("No hay relaciones para seleccionar.")]]
-    relation_frame = sg.Frame("Relaciones a Incluir", [
+
+    relation_frame = sg.Frame("Preguntas a Incluir", [
         [sg.Column(checkboxes_layout, size=(300, 150), scrollable=True, vertical_scroll_only=True)],
         [sg.Button("Todas", key='-SOC_SEL_ALL-'), sg.Button("Ninguna", key='-SOC_SEL_NONE-'), sg.Button("Positivas", key='-SOC_SEL_POS-'), sg.Button("Negativas", key='-SOC_SEL_NEG-')]
     ], expand_y=True)
+    
+    # --- Frame 2: Filtros por Sexo ---
     filter_frame = sg.Frame("Filtro por Sexo", [
         [sg.Text("Nodos (Miembros):")],
         [sg.Radio("Todos", "GENDER_FILTER", default=True, key='-SOC_GENDER_ALL-'), sg.Radio("Masculino", "GENDER_FILTER", key='-SOC_GENDER_M-'), sg.Radio("Femenino", "GENDER_FILTER", key='-SOC_GENDER_F-')],
@@ -278,208 +312,205 @@ def create_layout_sociogram(institution_name, group_name, relation_options, part
         [sg.Text("Aristas (Conexiones):")],
         [sg.Radio("Todas", "CONN_GENDER", default=True, key='-SOC_CONN_ALL-'), sg.Radio("Mismo Sexo", "CONN_GENDER", key='-SOC_CONN_SAME-'), sg.Radio("Diferente Sexo", "CONN_GENDER", key='-SOC_CONN_DIFF-')]
     ])
-    left_col_layout = sg.Column([[relation_frame], [filter_frame]], vertical_alignment='top')
+    
+    # --- Frame 3: Modos de Red (Fuente de Datos) ---
+    aggregation_options = [
+        ("Red Real (Acciones Directas)", "real_actions"),
+        ("Red de Relaciones Completas (CIVSOC)", "civsoc_matrix"),
+        ("Red de Meta-Percepción (SELF)", "meta_perceptions"),
+        ("Análisis de Precisión (Global)", "accuracy_analysis"), # Texto final corregido
+    ]
+
+    aggregation_frame = sg.Frame("Fuente de Datos y Agregación", [
+        [sg.Text("Modo de Red:", size=(28,1)),
+         sg.Combo([opt[0] for opt in aggregation_options], default_value=aggregation_options[0][0],
+                  key='-SOC_AGGREGATION_MODE-', readonly=True, enable_events=True, expand_x=True,
+                  tooltip="Define el tipo de análisis a visualizar.")],
+        [sg.Text("Perceptor (para Foco):", size=(28,1)),
+         sg.Combo([p[0] for p in participant_options if p[1] is not None], 
+                  key='-SOC_PERCEIVER-', readonly=True, disabled=True, expand_x=True,
+                  tooltip="Este campo se activa solo para modos que requieren un foco individual.")]
+    ], expand_x=True)
+    
+    # --- Ensamblaje de la Columna Izquierda ---
+    left_col_layout = sg.Column([[relation_frame], [filter_frame], [aggregation_frame]], vertical_alignment='top')
+    
+    # --- Controles de la Columna Derecha ---
     style_frame = sg.Frame("Estilos y Etiquetas", [
         [sg.Text("Etiquetas Nodos:"), sg.Combo(['Iniciales', 'Nombre Apellido', 'Anónimo'], default_value='Iniciales', key='-SOC_LABEL_MODE-', readonly=True, size=(20,1))],
         [sg.Checkbox("Estilo de Arista Recíproca", default=True, key='-SOC_RECIPROCAL_STYLE-')],
         [sg.Checkbox("Mostrar Nodos Aislados", default=True, key='-SOC_SHOW_ISOLATES-')],
         [sg.Checkbox("Mostrar solo Miembros Activos", key='-SOC_ACTIVE_ONLY-')]
     ])
+    
     color_role_frame = sg.Frame("Coloreado por Rol", [
-        [sg.Checkbox("Solo Reciben / Auto-eligen", key='-SOC_COLOR_RECEIVERS-')],
         [sg.Checkbox("En Relación Recíproca", key='-SOC_COLOR_RECIP_NODES-')]
     ])
+    
     analysis_frame = sg.Frame("Análisis y Resaltado", [
         [sg.Text("Foco en un Participante:")],
         [sg.Combo([p[0] for p in participant_options], default_value=participant_options[0][0] if participant_options else '', size=(25, 1), key='-SOC_FOCUS_PARTICIPANT-', readonly=True)],
         [sg.Radio("Todas Conexiones", "FOCUS_MODE", default=True, key='-SOC_FOCUS_ALL-'), sg.Radio("Salientes", "FOCUS_MODE", key='-SOC_FOCUS_OUT-'), sg.Radio("Entrantes", "FOCUS_MODE", key='-SOC_FOCUS_IN-')],
-        [sg.HorizontalSeparator()],
-        [sg.Text("Resaltar Líderes (por elecciones positivas):")],
-        [sg.Radio("Ninguno", "HIGHLIGHT", default=True, key='-SOC_HL_NONE-', enable_events=True), sg.Radio("Top N", "HIGHLIGHT", key='-SOC_HL_TOPN-', enable_events=True), sg.Radio("K-ésimo", "HIGHLIGHT", key='-SOC_HL_KTH-', enable_events=True)],
-        [sg.Text("Valor (N o K):", size=(12,1)), sg.Input("1", size=(5,1), key='-SOC_HL_VALUE-', disabled=True)],
     ])
+
+    # --- Ensamblaje de la Columna Derecha ---
     right_col_layout = sg.Column([[style_frame], [color_role_frame], [analysis_frame]], vertical_alignment='top')
+    
+    # --- Layout Principal de Controles ---
     top_controls_layout = [[left_col_layout, sg.VSeperator(), right_col_layout]]
+    
+    # --- Instrucciones de Uso ---
     info_layout = [
-        [sg.Text("Instrucciones:", font=("Helvetica", 10, "bold"))],
-        [sg.Text("1. Selecciona los filtros y relaciones deseados.")],
-        [sg.Text("2. Haz clic en 'Generar y Ver Sociograma'.")],
-        [sg.Text("3. Se abrirá una nueva ventana con el grafo interactivo.")],
-        [sg.Text("4. En esa ventana, puedes arrastrar los nodos, hacer zoom, etc.")],
-        [sg.Text("5. CIERRA LA VENTANA DEL SOCIOGRAMA para volver a esta pantalla.")]
+        [sg.Text("1. Selecciona el 'Modo de Red' y los filtros deseados.")],
+        [sg.Text("2. Haz clic en 'Generar y Ver Sociograma'. Se abrirá una nueva ventana con el grafo interactivo.")],
+        [sg.Text("3. CIERRA LA VENTANA DEL SOCIOGRAMA para volver a esta pantalla.")]
     ]
-
-    # --- INICIO DE LA CORRECCIÓN ---
-
-    # 1. Se define UNA ÚNICA lista que contiene todas las filas de la vista
+    
+    # --- Ensamblaje Final de la Ventana ---
     main_content = [
         [sg.Text(f"Sociograma Interactivo: {group_name} ({institution_name})", font=("Helvetica", 16))],
         [sg.Frame("Opciones de Visualización", top_controls_layout, expand_x=True)],
         [sg.Frame("Uso", info_layout, expand_x=True)],
         [sg.HorizontalSeparator()],
-        # La fila de botones AHORA ESTÁ DENTRO de esta lista principal
         [sg.Button("Generar y Ver Sociograma", key='-SOC_GENERATE_INTERACTIVE-'),
          sg.Push(),
          sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')]
     ]
     
-    # 2. Toda la vista se envuelve en UNA ÚNICA COLUMNA con scroll
     layout = [[sg.Column(main_content, scrollable=True, vertical_scroll_only=True, expand_x=True, expand_y=True)]]
-    
     return layout
-
-    # --- FIN DE LA CORRECCIÓN ---
 
 def create_layout_sociomatrix(institution_name, group_name):
     """
-    VERSIÓN FINAL Y DEFINITIVA: Crea el layout de la Matriz Sociométrica,
-    asegurando que los encabezados de la tabla y la lista de preguntas se
-    generen respetando el orden original de los datos.
+    Versión final que unifica la selección de preguntas mediante checkboxes para todos los modos.
     """
-    
-    # 1. Preparar la sección de PREGUNTAS
-    defs = app_data.get_class_question_definitions(institution_name, group_name)
-    q_layout_rows = []
-    
-    if defs:
-        # Ordenar las preguntas por su propiedad 'order' para una visualización consistente
-        sorted_q_items = sorted(defs.items(), key=lambda item: (item[1].get('order', 99), item[0]))
-        for q_id, q_def in sorted_q_items:
-            data_key = q_def.get('data_key')
-            polarity = q_def.get('polarity')
-            widget_key = f"-MATRIXQ__{data_key}__"
-            
-            # ¡AQUÍ ESTÁ EL CAMBIO CLAVE!
-            # Obtenemos la categoría de la pregunta en lugar del texto completo.
-            categoria = q_def.get('type', 'General')
-            
-            # Creamos el checkbox usando la polaridad y la categoría.
-            q_layout_rows.append([sg.Checkbox(f"({polarity[:3].title()}) {categoria}", 
-                                           key=widget_key, default=True)])
-    else:
-        q_layout_rows = [[sg.Text("No hay preguntas definidas para este grupo.")]]
+    # --- 1. DEFINICIÓN DE LOS CONTROLES DE LA UI ---
 
-    # Crear el contenedor con scroll para las preguntas
-    questions_column = sg.Column(
-        q_layout_rows, 
-        size=(780, 120), 
-        scrollable=True, 
-        vertical_scroll_only=True
+    # Frame de selección de preguntas (UNIFICADO PARA TODOS LOS MODOS)
+    relation_options = sociogram_utils.get_relation_options(institution_name, group_name, app_data)
+    q_layout_rows = [[sg.Checkbox(opt['label'], key=f"-MATRIXQ__{opt['data_key']}__", default=True)] for opt in relation_options] if relation_options else [[sg.Text("No hay preguntas definidas.")]]
+    questions_frame = sg.Frame("Preguntas a Incluir",
+        [[sg.Column(q_layout_rows, size=(780, 120), scrollable=True, vertical_scroll_only=True)],
+         [sg.Button("Todas", k='-MATRIX_ALL-'), sg.Button("Ninguna", k='-MATRIX_NONE-'), sg.Button("Positivas", k='-MATRIX_POS-'), sg.Button("Negativas", k='-MATRIX_NEG-')]],
+        expand_x=True, key='-QUESTIONS_FRAME-'
+    )
+
+    # Frame para seleccionar el modo de análisis
+    aggregation_options = [
+        ("Matriz de Elecciones (Estándar)", "real_actions"),
+        ("Matriz de Relaciones Completas (CIVSOC)", "civsoc_matrix"),
+        ("Meta-Percepción (SELF)", "meta_perceptions"),
+        ("Análisis de Precisión", "accuracy_analysis"),
+    ]
+    participant_options = sociogram_utils.get_participant_options(app_state, app_data, hutils)
+    aggregation_frame = sg.Frame("Fuente de Datos y Agregación", [
+        [sg.Text("Modo de Análisis:", size=(25,1)), sg.Combo([opt[0] for opt in aggregation_options], default_value=aggregation_options[0][0], key='-MATRIX_AGGREGATION_MODE-', readonly=True, enable_events=True, expand_x=True)],
+        [sg.Text("Miembro Foco / Perceptor:", size=(25,1)), sg.Combo([p[0] for p in participant_options if p[1] is not None], key='-MATRIX_PERCEIVER-', readonly=True, disabled=True)]
+    ], expand_x=True)
+
+    # Panel de estado
+    status_panel = sg.Frame("Estado",
+        [[sg.Multiline("Seleccione un modo, las preguntas y haga clic en 'Generar y Abrir Matriz'.",
+                       key='-MATRIX_STATUS-', size=(80, 4), disabled=True, autoscroll=True, background_color='white', text_color='black')]],
+        expand_x=True
     )
     
-    questions_frame = sg.Frame(
-        "Preguntas",
-        [
-            [questions_column],
-            [sg.Button("Todas", key='-MATRIX_ALL-'), 
-             sg.Button("Ninguna", key='-MATRIX_NONE-'), 
-             sg.Button("Positivas", key='-MATRIX_POS-'), 
-             sg.Button("Negativas", key='-MATRIX_NEG-')]
-        ]
-    )
-    
-    # 2. Pre-calcular los encabezados para la TABLA, respetando el orden original
-    # Obtener la lista de miembros SIN ORDENARLA
-    temp_members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
-    
-    # Crear las iniciales A PARTIR de esa lista original, SIN usar sorted()
-    temp_initials = [m.get('iniz','N/A').upper() for m in temp_members_list]
-    
-    table_headings = ['Nominador'] + temp_initials + ['TOTAL Hechas']
-    
-    # Definir anchos de columna
-    col_widths = [25] + [5] * len(temp_initials) + [10]
-
-    # 3. Definir el layout de la tabla
-    table_layout = [[sg.Table(
-        values=[[]],
-        headings=table_headings, # Usar los encabezados en el orden correcto
-        key='-MATRIX_TABLE-',
-        justification='center',
-        auto_size_columns=False,
-        col_widths=col_widths,
-        num_rows=25,
-        background_color='white', text_color='black',
-        header_background_color='#D0D0D0',
-        alternating_row_color='#F7F7F7',
-        expand_x=True, expand_y=True
-    )]]
-    
-    # 4. Ensamblar el contenido principal de la ventana
-    main_content = [
+    # --- Ensamblaje del Layout Final ---
+    layout = [
         [sg.Text(f"Matriz Sociométrica: {group_name} ({institution_name})", font=("Helvetica", 16))],
-        [questions_frame],
-        [sg.Button("Actualizar Matriz", key='-MATRIX_UPDATE-')],
-        [sg.Text("Resultado:")],
-        [sg.Column(table_layout, expand_x=True, expand_y=True)],
-        [sg.Button("PDF Matriz", key='-MATRIX_PDF-'), sg.Push(), sg.Button("Volver", key='-BACK_TO_GROUPS-')]
+        [aggregation_frame],
+        [questions_frame], # El único frame de selección, siempre visible
+        [sg.Checkbox("Permitir auto-elección en la diagonal (solo modo estándar)", key='-MATRIX_ALLOW_SELF-', default=False)],
+        [sg.Button("Generar y Abrir Matriz", key='-MATRIX_UPDATE-')],
+        [status_panel],
+        [sg.VPush()],
+        [sg.HorizontalSeparator()],
+        [sg.Button("Generar PDF", key='-MATRIX_PDF-'), sg.Push(), sg.Button("Volver", key='-BACK_TO_GROUPS-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se envuelve todo el contenido en una columna con scroll
-    layout = [[sg.Column(main_content, expand_x=True, expand_y=True, scrollable=True)]]
+    return [[sg.Column(layout, expand_x=True, expand_y=True)]]
+
+def create_layout_sociogram(institution_name, group_name, relation_options, participant_options):
+    """
+    Versión FINAL. Incluye todos los controles de la interfaz, incluyendo el resaltado de líderes
+    y el coloreado por rol de "Solo Reciben".
+    """
+    log_message(f"Creando layout de Sociograma para: {group_name}", 'info')
+    
+    # --- Columna Izquierda (sin cambios) ---
+    checkboxes_layout = [[sg.Checkbox(opt['label'], default=True, key=f"-SOC_REL__{opt['data_key']}__")] for opt in relation_options] if relation_options else [[sg.Text("No hay relaciones para seleccionar.")]]
+    relation_frame = sg.Frame("Preguntas a Incluir", [[sg.Column(checkboxes_layout, size=(300, 150), scrollable=True, vertical_scroll_only=True)], [sg.Button("Todas", key='-SOC_SEL_ALL-'), sg.Button("Ninguna", key='-SOC_SEL_NONE-'), sg.Button("Positivas", key='-SOC_SEL_POS-'), sg.Button("Negativas", key='-SOC_SEL_NEG-')]], expand_y=True)
+    filter_frame = sg.Frame("Filtro por Sexo", [[sg.Text("Nodos (Miembros):")], [sg.Radio("Todos", "GENDER_FILTER", default=True, key='-SOC_GENDER_ALL-'), sg.Radio("Masculino", "GENDER_FILTER", key='-SOC_GENDER_M-'), sg.Radio("Femenino", "GENDER_FILTER", key='-SOC_GENDER_F-')], [sg.HorizontalSeparator()], [sg.Text("Aristas (Conexiones):")], [sg.Radio("Todas", "CONN_GENDER", default=True, key='-SOC_CONN_ALL-'), sg.Radio("Mismo Sexo", "CONN_GENDER", key='-SOC_CONN_SAME-'), sg.Radio("Diferente Sexo", "CONN_GENDER", key='-SOC_CONN_DIFF-')]])
+    aggregation_options = [("Red Real (Acciones Directas)", "real_actions"), ("Red de Relaciones Completas (CIVSOC)", "civsoc_matrix"), ("Red de Meta-Percepción (SELF)", "meta_perceptions"), ("Análisis de Precisión (Global)", "accuracy_analysis")]
+    aggregation_frame = sg.Frame("Fuente de Datos y Agregación", [[sg.Text("Modo de Red:", size=(28,1)), sg.Combo([opt[0] for opt in aggregation_options], default_value=aggregation_options[0][0], key='-SOC_AGGREGATION_MODE-', readonly=True, enable_events=True, expand_x=True, tooltip="Define el tipo de análisis a visualizar.")], [sg.Text("Perceptor (para Foco):", size=(28,1)), sg.Combo([p[0] for p in participant_options if p[1] is not None], key='-SOC_PERCEIVER-', readonly=True, disabled=True, expand_x=True, tooltip="Este campo se activa solo para modos que requieren un foco individual.")]], expand_x=True)
+    left_col_layout = sg.Column([[relation_frame], [filter_frame], [aggregation_frame]], vertical_alignment='top')
+
+    # --- INICIO DE LA MODIFICACIÓN: Columna Derecha ---
+
+    style_frame = sg.Frame("Estilos y Etiquetas", [
+        # Se añade la opción "Anónimo"
+        [sg.Text("Etiquetas Nodos:"), sg.Combo(['Iniciales', 'Nombre Apellido', 'Anónimo'], default_value='Iniciales', key='-SOC_LABEL_MODE-', readonly=True, size=(20,1))],
+        [sg.Checkbox("Estilo de Arista Recíproca", default=True, key='-SOC_RECIPROCAL_STYLE-')],
+        [sg.Checkbox("Mostrar Nodos Aislados", default=True, key='-SOC_SHOW_ISOLATES-')],
+        [sg.Checkbox("Mostrar solo Miembros Activos", key='-SOC_ACTIVE_ONLY-')]
+    ])
+    
+    color_role_frame = sg.Frame("Coloreado por Rol", [
+        # Se añade el nuevo checkbox
+        [sg.Checkbox("Solo Reciben / Auto-eligen", key='-SOC_COLOR_RECEIVERS-')],
+        [sg.Checkbox("En Relación Recíproca", key='-SOC_COLOR_RECIP_NODES-')]
+    ])
+    
+    analysis_frame = sg.Frame("Análisis y Resaltado", [
+        [sg.Text("Foco en un Participante:")],
+        [sg.Combo([p[0] for p in participant_options], default_value=participant_options[0][0] if participant_options else '', size=(25, 1), key='-SOC_FOCUS_PARTICIPANT-', readonly=True)],
+        [sg.Radio("Todas Conexiones", "FOCUS_MODE", default=True, key='-SOC_FOCUS_ALL-'), sg.Radio("Salientes", "FOCUS_MODE", key='-SOC_FOCUS_OUT-'), sg.Radio("Entrantes", "FOCUS_MODE", key='-SOC_FOCUS_IN-')],
+        [sg.HorizontalSeparator()],
+        # Se añade la sección de Resaltar Líderes
+        [sg.Text("Resaltar Líderes (por elecciones positivas):")],
+        [sg.Radio("Ninguno", "HIGHLIGHT", default=True, key='-SOC_HL_NONE-', enable_events=True), 
+         sg.Radio("Top N", "HIGHLIGHT", key='-SOC_HL_TOPN-', enable_events=True), 
+         sg.Radio("K-ésimo", "HIGHLIGHT", key='-SOC_HL_KTH-', enable_events=True)],
+        [sg.Text("Valor (N o K):", size=(12,1)), sg.Input("1", size=(5,1), key='-SOC_HL_VALUE-', disabled=True)],
+    ])
+
+    right_col_layout = sg.Column([[style_frame], [color_role_frame], [analysis_frame]], vertical_alignment='top')
+    # --- FIN DE LA MODIFICACIÓN ---
+    
+    # --- Ensamblaje Final (sin cambios) ---
+    top_controls_layout = [[left_col_layout, sg.VSeperator(), right_col_layout]]
+    info_layout = [[sg.Text("1. Selecciona el 'Modo de Red' y los filtros deseados.")], [sg.Text("2. Haz clic en 'Generar y Ver Sociograma'. Se abrirá una nueva ventana con el grafo interactivo.")], [sg.Text("3. CIERRA LA VENTANA DEL SOCIOGRAMA para volver a esta pantalla.")]]
+    main_content = [[sg.Text(f"Sociograma Interactivo: {group_name} ({institution_name})", font=("Helvetica", 16))], [sg.Frame("Opciones de Visualización", top_controls_layout, expand_x=True)], [sg.Frame("Uso", info_layout, expand_x=True)], [sg.HorizontalSeparator()], [sg.Button("Generar y Ver Sociograma", key='-SOC_GENERATE_INTERACTIVE-'), sg.Push(), sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')]]
+    layout = [[sg.Column(main_content, scrollable=True, vertical_scroll_only=True, expand_x=True, expand_y=True)]]
     return layout
 
-def create_layout_diana(institution_name, group_name, relation_options):
-    """
-    Crea el layout para la Diana, haciendo que el área de la imagen
-    sea expandible para ocupar más espacio en la ventana.
-    """
-    log_message(f"Creando layout para Diana: {group_name}", 'info')
+def create_layout_accuracy_report(institution_name, group_name):
+    """Crea el layout para la ventana del reporte de precisión de percepción."""
     
-    # --- Columna Izquierda: Controles ---
-    checkboxes_layout = []
-    if relation_options:
-        # CORRECCIÓN: Se añade el campo 'polarity' a la información de cada opción para usarlo después
-        defs = app_data.get_class_question_definitions(institution_name, group_name)
-        for opt in relation_options:
-            polarity = next((d.get('polarity', 'neutral') for d in defs.values() if d.get('data_key') == opt['data_key']), 'neutral')
-            checkboxes_layout.append([sg.Checkbox(opt['label'], default=(polarity == 'positive'), key=f"-DIANA_Q__{opt['data_key']}__")])
-    else:
-        checkboxes_layout = [[sg.Text("No hay preguntas definidas.")]]
-        
-    questions_column = sg.Column(checkboxes_layout, size=(450, 150), scrollable=True, vertical_scroll_only=True)
-    
-    controls_layout = [
-        [sg.Text("Seleccione preguntas para el cálculo de afinidad:")],
-        [questions_column],
-        [sg.Checkbox("Mostrar líneas de elección", default=True, key='-DIANA_SHOW_LINES-')],
-        # <-- INICIO DEL CAMBIO CLAVE: Añadir keys a los botones -->
-        [sg.Button("Todas", key='-DIANA_ALL-'), 
-         sg.Button("Ninguna", key='-DIANA_NONE-'), 
-         sg.Button("Positivas", key='-DIANA_POS-'), 
-         sg.Button("Negativas", key='-DIANA_NEG-')]
-        # <-- FIN DEL CAMBIO CLAVE -->
-    ]
-    
-    zoom_controls_layout = [
-        [sg.Text("Zoom:", size=(5,1)), 
-         sg.Slider(range=(20, 300), default_value=100, resolution=10, orientation='h', key='-DIANA_ZOOM_SLIDER-', enable_events=True, disable_number_display=True),
-         sg.Text("100%", key='-DIANA_ZOOM_TEXT-', size=(5,1))]
-    ]
-    
-    left_col = [
-        [sg.Frame("Controles", controls_layout)],
-        [sg.Button("Generar/Actualizar Diana", key='-DIANA_GENERATE-')],
-        [sg.Frame("Visualización", zoom_controls_layout)],
-    ]
+    headings = ["Miembro (Ego)", "Categoría", "Aciertos", "Errores (Falsos Positivos)", "Omisiones (Falsos Negativos)", "Precisión"]
+    col_widths = [25, 15, 25, 25, 25, 10]
 
-    # --- Columna Derecha: Imagen ---
-    image_layout = [[sg.Image(key='-DIANA_IMAGE-', background_color='white')]]
-    
-    right_col = [
-        [sg.Column(image_layout, size=(800, 800), background_color='white', key='-DIANA_IMAGE_CONTAINER-', expand_x=True, expand_y=True)]
-    ]
-    
-    # --- Ensamblaje del contenido principal ---
     main_content = [
-        [sg.Text(f"Diana de Afinidad: {group_name} ({institution_name})", font=("Helvetica", 16))],
-        [sg.Column(left_col), sg.Column(right_col, expand_x=True, expand_y=True)],
-        [sg.Button("Guardar Diana (PNG)", key='-DIANA_SAVE-', disabled=True), sg.Push(), sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')]
+        [sg.Text("Reporte de Precisión de Meta-Percepción", font=("Helvetica", 16))],
+        [sg.Text(f"Institución: {institution_name} | Grupo: {group_name}")],
+        [sg.Table(
+            values=[[]], # Se llenará dinámicamente
+            headings=headings,
+            key='-ACCURACY_TABLE-',
+            auto_size_columns=False,
+            col_widths=col_widths,
+            justification='left',
+            num_rows=20,
+            expand_x=True,
+            expand_y=True
+        )],
+        [sg.Push(), sg.Button("Cerrar", key='-CLOSE-')]
     ]
     
-    layout = [[sg.Column(main_content, expand_x=True, expand_y=True, scrollable=True)]]
-    
+    layout = [[sg.Column(main_content, expand_x=True, expand_y=True)]]
     return layout
+
+# --- BLOQUE 4 DE 10: LAYOUT DE GESTIÓN DE CSV ---
 
 def create_layout_csv_management():
     """
@@ -557,212 +588,26 @@ def create_layout_csv_management():
         [sg.Push(), sg.Button("Volver", key='-BACK-')]
     ]
     
-    # <-- CAMBIO CLAVE: Se envuelve todo el contenido en una columna con scroll
     layout = [[sg.Column(main_content, expand_x=True, expand_y=True, scrollable=True)]]
     return layout
 
-def create_layout_confirm_polarity(questions_to_confirm):
-    layout = [[sg.Text("Confirmación de Polaridad", font=("Helvetica", 14))], [sg.Text("Marque si la pregunta es Positiva (Aceptación).")]]
-    for question_text, q_data in questions_to_confirm.items():
-        is_neg_guess = any(word in question_text.lower() for word in ['no ', 'evitar', 'nunca', 'rechaz'])
-        layout.append([sg.Checkbox(question_text, default=not is_neg_guess, key=q_data['data_key'])])
-    layout.append([sg.Button("Confirmar", key='-CONFIRM-'), sg.Button("Cancelar", key='-CANCEL-')])
-    return layout
+# --- Fin del Bloque 3 (en el archivo original) ---
 
-# --- Fin del Bloque 3 ---
-
-# --- BLOQUE 4.1: Función Auxiliar y Formularios ---
+# --- BLOQUE 5 DE 10: FUNCIONES AUXILIARES Y VENTANAS DE FORMULARIOS/CSV ---
+# =============================================================================
+#  BLOQUE 4.1: Función Auxiliar y Formularios (movido aquí, antes eran Bloques 4.1 y 4.2)
+# =============================================================================
 
 def draw_figure(canvas, figure):
     """
     Función auxiliar para dibujar una figura de Matplotlib en un Canvas de Tkinter.
     """
-    # Borrar la figura anterior del canvas si existe
     for item in canvas.winfo_children():
         item.destroy()
-        
     figure_canvas_agg = FigureCanvasTkAgg(figure, canvas)
     figure_canvas_agg.draw()
     figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
     return figure_canvas_agg
-
-def window_form_institution(is_new=True, original_data=None):
-    layout = create_layout_form_institution(is_new, original_data)
-    window = sg.Window("Formulario Institución", layout, modal=True, finalize=True)
-    saved = False
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancelar'):
-            break
-        if event == 'Guardar':
-            if is_new:
-                success, msg = hinst.handle_add_institution(values['-NAME-'], values['-ANNOT-'])
-            else:
-                success, msg = hinst.handle_modify_institution(original_data['name'], values['-NAME-'], values['-ANNOT-'])
-            sg.popup(msg)
-            if success:
-                saved = True
-                break
-    window.close()
-    return saved
-
-def window_form_group(institution_name, is_new=True, original_data=None):
-    layout = create_layout_form_group(institution_name, is_new, original_data)
-    window = sg.Window("Formulario Grupo", layout, modal=True, finalize=True)
-    saved = False
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancelar'):
-            break
-        if event == 'Guardar':
-            group_details = {'name': values['-NAME-'], 'coordinator': values['-COORD-'], 'ins2': values['-INS2-'], 'ins3': values['-INS3-'], 'sostegno': values['-SOST-'], 'annotations': values['-ANNOT-']}
-            if is_new:
-                success, msg = hgrp.handle_add_group(institution_name, group_details)
-            else:
-                success, msg = hgrp.handle_modify_group(institution_name, original_data['name'], group_details)
-            sg.popup(msg)
-            if success:
-                saved = True
-                break
-    window.close()
-    return saved
-
-def window_form_member(institution_name, group_name, is_new=True, original_data=None):
-    layout = create_layout_form_member(is_new, original_data)
-    window = sg.Window("Formulario Miembro", layout, modal=True, finalize=True)
-    saved = False
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancelar'):
-            break
-        if event == 'Guardar':
-            sexo = 'Masculino' if values['-SEXO_M-'] else 'Femenino' if values['-SEXO_F-'] else 'Desconocido'
-            member_details = {'cognome': values['-COGNOME-'], 'nome': values['-NOME-'], 'iniz': values['-INIZ-'], 'sexo': sexo, 'fecha_nac': values['-DOB-'], 'annotations': values['-ANNOT-']}
-            if is_new:
-                success, msg = hfmember.handle_add_member(institution_name, group_name, member_details)
-            else:
-                original_name_key = f"{original_data.get('nome','').title()} {original_data.get('cognome','').title()}"
-                success, msg = hfmember.handle_modify_member(institution_name, group_name, original_name_key, original_data, member_details)
-            sg.popup(msg)
-            if success:
-                saved = True
-                break
-    window.close()
-    return saved
-
-def window_form_question(is_new=True, initial_data=None, next_order_number=99):
-    """
-    Abre el formulario para crear o modificar una pregunta.
-    
-    Args:
-        is_new (bool): True si es una pregunta nueva, False si se está modificando.
-        initial_data (dict, optional): Datos de la pregunta a modificar.
-        next_order_number (int, optional): El siguiente número de orden disponible,
-                                           usado solo al crear una nueva pregunta.
-    """
-    d = initial_data or {}
-    title = "Nueva Pregunta" if is_new else "Modificar Pregunta"
-
-    # Determinar el valor para el campo 'Orden'.
-    # Si es una pregunta nueva, usa el número calculado que se le pasa.
-    # Si se está modificando, usa el valor que ya tenía la pregunta.
-    order_value = next_order_number if is_new else d.get('order', '99')
-
-    layout = [
-        [sg.Text(title, font=("Helvetica", 14))],
-        [sg.Text("ID Único:", size=(20,1)), sg.Input(d.get('id', ''), key='-Q_ID-')],
-        [sg.Text("Texto Pregunta:", size=(20,1)), sg.Multiline(d.get('text', ''), size=(40,3), key='-Q_TEXT-')],
-        [sg.Text("Tipo/Categoría:", size=(20,1)), sg.Input(d.get('type', ''), key='-Q_TYPE-')],
-        [sg.Text("Clave de Datos:", size=(20,1)), sg.Input(d.get('data_key', ''), key='-Q_DK-')],
-        [sg.Text("Polaridad:"), sg.Radio("Positiva", "POL", key='-Q_POL_POS-', default=d.get('polarity', 'positive')=='positive'), sg.Radio("Negativa", "POL", key='-Q_POL_NEG-', default=d.get('polarity')=='negative')],
-        [sg.Text("Orden:", size=(20,1)), sg.Input(order_value, size=(5,1), key='-Q_ORDER-')],
-        [sg.Text("Máx. Selecciones:", size=(20,1)), sg.Input(d.get('max_selections', '2'), size=(5,1), key='-Q_MAX-')],
-        [sg.Checkbox("Permitir auto-selección", default=d.get('allow_self_selection', False), key='-Q_SELF-')],
-        [sg.Submit("Guardar"), sg.Cancel("Cancelar")]
-    ]
-    
-    window = sg.Window("Formulario Pregunta", layout, modal=True, finalize=True)
-    saved = False
-    
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Cancelar'):
-            break
-        
-        if event == 'Guardar':
-            try:
-                q_data = {
-                    'id': values['-Q_ID-'],
-                    'text': values['-Q_TEXT-'],
-                    'type': values['-Q_TYPE-'],
-                    'data_key': values['-Q_DK-'],
-                    'polarity': 'positive' if values['-Q_POL_POS-'] else 'negative',
-                    'order': int(values['-Q_ORDER-']),
-                    'max_selections': int(values['-Q_MAX-']),
-                    'allow_self_selection': values['-Q_SELF-']
-                }
-                
-                if is_new:
-                    # Llama al handler para añadir la nueva pregunta
-                    success, msg = hq.handle_add_question(app_state['current_institution_viewing_groups'], app_state['current_group_viewing_questions'], q_data)
-                else:
-                    # Llama al handler para modificar la pregunta existente
-                    success, msg = hq.handle_modify_question(app_state['current_institution_viewing_groups'], app_state['current_group_viewing_questions'], initial_data['id'], q_data)
-                
-                sg.popup(msg)
-                if success:
-                    saved = True
-                    break
-            except ValueError:
-                sg.popup_error("Error: 'Orden' y 'Máximo de Selecciones' deben ser números enteros.")
-            except Exception as e:
-                sg.popup_error(f"Error inesperado: {e}")
-                
-    window.close()
-    return saved
-
-def window_confirm_import_details(questions_to_confirm):
-    """
-    Muestra un pop-up para que el usuario confirme la polaridad Y la categoría
-    de cada nueva pregunta encontrada en el CSV.
-    """
-    layout = [
-        [sg.Text("Confirmar Detalles de Nuevas Preguntas", font=("Helvetica", 14))],
-        [sg.Text("Para cada pregunta, confirma su polaridad (márcala si es positiva) y edita la categoría sugerida si es necesario.")]
-    ]
-
-    for question_text, q_data in questions_to_confirm.items():
-        data_key = q_data['data_key']
-        # Adivinar si la pregunta es negativa para el default del checkbox
-        is_neg_guess = any(word in question_text.lower() for word in ['no ', 'evitar', 'nunca', 'rechaz'])
-        
-        layout += [
-            [sg.HorizontalSeparator()],
-            [sg.Text(f'Pregunta: "{question_text}"', font=("Helvetica", 10, "bold"))],
-            [sg.Checkbox("Es una pregunta Positiva (de aceptación)", default=not is_neg_guess, key=f"pol__{data_key}")],
-            [sg.Text("Categoría:", size=(10, 1)), sg.Input(q_data['suggested_category'], key=f"cat__{data_key}", size=(25, 1))]
-        ]
-
-    layout.append([sg.Button("Confirmar e Importar", key='-CONFIRM-'), sg.Button("Cancelar", key='-CANCEL-')])
-    
-    window = sg.Window("Confirmar Detalles de Importación", layout, modal=True, finalize=True)
-    
-    confirmed_details = None
-    while True:
-        event, values = window.read()
-        if event in (sg.WIN_CLOSED, '-CANCEL-'):
-            break
-        if event == '-CONFIRM-':
-            confirmed_details = {}
-            for q_text, q_data in questions_to_confirm.items():
-                data_key = q_data['data_key']
-                polarity = 'positive' if values[f"pol__{data_key}"] else 'negative'
-                category = values[f"cat__{data_key}"].strip().capitalize() or "General"
-                confirmed_details[data_key] = {'polarity': polarity, 'category': category}
-            break
-            
-    window.close()
-    return confirmed_details
 
 # --- BLOQUE 4.2: Ventana de Gestión de CSV ---
 
@@ -791,7 +636,6 @@ def window_csv_management(ui_context, tk_parent_window):
         if event in (sg.WIN_CLOSED, '-BACK-'):
             break
 
-        # Habilitar/deshabilitar checkboxes dependientes
         if event == '-CSV_OPT_DEFS-':
             is_enabled = values['-CSV_OPT_DEFS-']
             window['-CSV_OPT_ADD_Q_ONLY-'].update(disabled=not is_enabled)
@@ -803,15 +647,15 @@ def window_csv_management(ui_context, tk_parent_window):
             window['-CSV_OPT_CREATE_MENTIONED-'].update(disabled=not is_enabled)
             
         elif event == '-PDF_INSTRUCTIONS-':
-            # ... (esta parte no cambia)
-            pdf_bytes, result_or_error = hcsv.handle_generate_instructions_pdf()
+            pdf_bytes, result_or_error = pdf_generator.generate_import_instructions_pdf()
             if pdf_bytes:
                 try:
-                    base_dir = os.path.dirname(os.path.abspath(__file__))
-                    save_path = os.path.join(base_dir, result_or_error) 
-                    with open(save_path, 'wb') as f: f.write(pdf_bytes)
-                    sg.popup_ok(f"El manual de usuario ha sido generado y guardado en:\n\n{save_path}\n\nSe abrirá a continuación.", title="Manual Generado")
-                    webbrowser.open_new(f"file://{save_path}")
+                    # Guardar y abrir el PDF
+                    save_path = sg.popup_get_file("Guardar Manual de Usuario", save_as=True, default_extension=".pdf", default_path=result_or_error, file_types=(("PDF Files", "*.pdf"),))
+                    if save_path:
+                        with open(save_path, 'wb') as f: f.write(pdf_bytes)
+                        sg.popup_ok(f"El manual de usuario ha sido guardado en:\n\n{save_path}\n\nSe intentará abrir a continuación.", title="Manual Generado")
+                        webbrowser.open_new(f"file://{os.path.abspath(save_path)}")
                 except Exception as e: sg.popup_error(f"Error al guardar o abrir el manual:\n{e}")
             else: sg.popup_error(f"No se pudo generar el PDF del manual:\n{result_or_error}")
 
@@ -831,7 +675,6 @@ def window_csv_management(ui_context, tk_parent_window):
                     'create_mentioned_members': values['-CSV_OPT_CREATE_MENTIONED-']
                 }
                 
-                # --- CAMBIO CLAVE: Pasamos 'tk_parent_window' a la función orquestadora ---
                 final_result = hcsv.run_full_csv_import_flow(tk_parent_window, csv_content, import_options, ui_context)
                 
                 if final_result and final_result.get('status') == 'success':
@@ -839,13 +682,11 @@ def window_csv_management(ui_context, tk_parent_window):
                     data_was_imported = True
                 elif final_result and final_result.get('status') == 'error':
                     sg.popup_error(final_result.get('message', 'Ocurrió un error.'))
-                # Si es 'cancelled', no se muestra nada.
 
             except Exception as e:
                 sg.popup_error(f"Error al procesar el archivo CSV: {e}\n\n{traceback.format_exc()}")
         
         elif event == '-CSV_EXPORT-':
-            # ... (esta parte no cambia)
             selected_groups_str = values['-CSV_OUT_GROUPS-']
             if not selected_groups_str: sg.popup_error("Por favor, selecciona al menos un grupo para exportar."); continue
             groups_to_export = [tuple(s.split(' / ')) for s in selected_groups_str]
@@ -854,10 +695,13 @@ def window_csv_management(ui_context, tk_parent_window):
                 save_path = sg.popup_get_file("Guardar Exportación CSV", save_as=True, default_extension=".csv", file_types=(("CSV Files", "*.csv"),))
                 if save_path:
                     try:
-                        with open(save_path, 'w', newline='', encoding='utf-8') as f:
-                            writer = csv.writer(f); writer.writerows(data_to_write)
+                        # La única corrección es cambiar 'utf-8' a 'utf-8-sig'
+                        with open(save_path, 'w', newline='', encoding='utf-8-sig') as f:
+                            writer = csv.writer(f)
+                            writer.writerows(data_to_write)
                         sg.popup("Exportación completada exitosamente.")
-                    except Exception as e: sg.popup_error(f"Error al guardar el archivo: {e}")
+                    except Exception as e:
+                        sg.popup_error(f"Error al guardar el archivo: {e}")
             else: sg.popup_error(data_to_write[0][0])
             
         elif event == '-CSV_LOAD_GROUPS-':
@@ -866,11 +710,17 @@ def window_csv_management(ui_context, tk_parent_window):
     window.close()
     return data_was_imported
 
-# --- BLOQUE 4.3: Ventanas de Cuestionario y Gestión de Preguntas ---
-
-# --- EN Red_Sociograma_App.py ---
+# --- BLOQUE 6 DE 10: FUNCIONES DE VENTANAS DE ANÁLISIS (CUESTIONARIO, PREGUNTAS, SOCIOGRAMA) ---
+# =============================================================================
+#  BLOQUE 4.3: Ventanas de Cuestionario y Gestión de Preguntas
+# =============================================================================
 
 def window_question_management(institution_name, group_name):
+    """
+    Versión FINAL. Gestiona el formulario de preguntas con la lógica separada para
+    'type' (estructural) y 'category' (temática), leyendo y guardando ambos campos
+    correctamente al crear o modificar preguntas.
+    """
     app_state['current_institution_viewing_groups'] = institution_name
     app_state['current_group_viewing_questions'] = group_name
     layout = create_layout_question_management(institution_name, group_name)
@@ -879,111 +729,148 @@ def window_question_management(institution_name, group_name):
     
     def refresh_list():
         questions = hq.get_question_definitions_for_group(institution_name, group_name)
-        display_list = [f"[{q.get('order', '?')}] {q.get('text', 'Sin texto')} (ID: {qid})" for qid, q in questions]
+        display_list = []
+        for qid, q in questions:
+            text = q.get('text', 'Sin texto')
+            display_list.append(f"[{q.get('order', '?')}] {text} (ID: {qid})")
         window['-Q_LIST-'].update(values=display_list, set_to_index=[])
         window['-MOD_Q-'].update(disabled=True); window['-DEL_Q-'].update(disabled=True)
     
     refresh_list()
-    # Valor de retorno por defecto es True (indica que no hay que salir)
-    return_value = True 
+    return_value = 'reload_previous' 
     
     while True:
         event, values = window.read()
-        
-        # --- CORRECCIÓN: El cierre de ventana ('X') ahora finaliza la app ---
-        if event == sg.WIN_CLOSED:
-            return_value = 'exit'
+
+        if event == sg.WIN_CLOSED or event == '-BACK_TO_Q-':
             break
-            
-        if event == '-BACK_TO_Q-':
-            break
-            
-        selected_q_display = values['-Q_LIST-'][0] if values['-Q_LIST-'] else None
         
+        selected_q_display = values.get('-Q_LIST-')[0] if values.get('-Q_LIST-') else None
         form_is_visible = window['-FORM_Q_FRAME-'].visible
         window['-NEW_Q-'].update(disabled=form_is_visible)
         window['-MOD_Q-'].update(disabled=form_is_visible or not selected_q_display)
         window['-DEL_Q-'].update(disabled=form_is_visible or not selected_q_display)
 
-        # ... (resto de la lógica de la ventana no cambia)
         if event == '-Q_LIST-':
              window['-FORM_Q_FRAME-'].update(visible=False)
+
         elif event == '-NEW_Q-':
             app_state['form_q_mode'] = 'new'
             current_defs_tuples = hq.get_question_definitions_for_group(institution_name, group_name)
             next_order = max([q_def.get('order', -1) for _, q_def in current_defs_tuples]) + 1 if current_defs_tuples else 0
+            
             window['-FORM_Q_TITLE-'].update("Nueva Pregunta")
-            for key in ['-FORM_Q_ID-', '-FORM_Q_TEXT-', '-FORM_Q_TYPE-', '-FORM_Q_DK-']: window[key].update('')
-            window['-FORM_Q_ORDER-'].update(next_order); window['-FORM_Q_MAX-'].update('2')
+            for key in ['-FORM_Q_ID-', '-FORM_Q_TEXT-', '-FORM_Q_CATEGORY-', '-FORM_Q_DK-']: window[key].update('')
+            window['-FORM_Q_ORDER-'].update(next_order); window['-FORM_Q_MAX-'].update('1')
             window['-FORM_Q_POL_POS-'].update(True); window['-FORM_Q_SELF-'].update(False)
+            window['-FORM_Q_IS_META_PERCEPTION-'].update(False)
             window['-FORM_Q_FRAME-'].update(visible=True)
+
         elif event == '-MOD_Q-' and selected_q_display:
             app_state['form_q_mode'] = 'modify'
-            try: q_id = selected_q_display.split('(ID: ')[1][:-1]
-            except IndexError: sg.popup_error("No se pudo identificar la pregunta."); continue
-            all_defs = hq.get_question_definitions_for_group(institution_name, group_name)
-            original_data_tuple = next(((qid, q_def) for qid, q_def in all_defs if qid == q_id), None)
-            if original_data_tuple:
-                d = original_data_tuple[1]; app_state['original_q_id'] = q_id
-                window['-FORM_Q_TITLE-'].update(f"Modificar Pregunta (ID: {q_id})"); window['-FORM_Q_ID-'].update(q_id)
-                window['-FORM_Q_TEXT-'].update(d.get('text', '')); window['-FORM_Q_TYPE-'].update(d.get('type', ''))
-                window['-FORM_Q_DK-'].update(d.get('data_key', '')); window['-FORM_Q_ORDER-'].update(d.get('order', '99'))
-                window['-FORM_Q_MAX-'].update(d.get('max_selections', '2'))
-                window['-FORM_Q_POL_POS-'].update(d.get('polarity', 'positive') == 'positive'); window['-FORM_Q_POL_NEG-'].update(d.get('polarity') == 'negative')
-                window['-FORM_Q_SELF-'].update(d.get('allow_self_selection', False))
+            try:
+                q_id = re.search(r'\(ID: (.*?)\)$', selected_q_display).group(1)
+            except (IndexError, AttributeError):
+                sg.popup_error("No se pudo identificar la pregunta seleccionada."); continue
+            
+            all_defs = dict(hq.get_question_definitions_for_group(institution_name, group_name))
+            original_data = all_defs.get(q_id)
+
+            if original_data:
+                app_state['original_q_id'] = q_id
+                window['-FORM_Q_TITLE-'].update(f"Modificar Pregunta (ID: {q_id})")
+                window['-FORM_Q_ID-'].update(q_id)
+                window['-FORM_Q_TEXT-'].update(original_data.get('text', ''))
+                
+                # --- LÍNEA CORREGIDA ---
+                # Ahora lee el campo 'category' en lugar de 'type'
+                window['-FORM_Q_CATEGORY-'].update(original_data.get('category', ''))
+                
+                window['-FORM_Q_DK-'].update(original_data.get('data_key', ''))
+                window['-FORM_Q_ORDER-'].update(original_data.get('order', '99'))
+                window['-FORM_Q_MAX-'].update(original_data.get('max_selections', '1'))
+                window['-FORM_Q_POL_POS-'].update(original_data.get('polarity', 'positive') == 'positive')
+                window['-FORM_Q_POL_NEG-'].update(original_data.get('polarity') == 'negative')
+                window['-FORM_Q_SELF-'].update(original_data.get('allow_self_selection', False))
+                
+                is_meta = original_data.get('type') == '[Meta-Percepción]'
+                window['-FORM_Q_IS_META_PERCEPTION-'].update(is_meta)
+                
                 window['-FORM_Q_FRAME-'].update(visible=True)
+
         elif event == '-DEL_Q-' and selected_q_display:
-            try: q_id = selected_q_display.split('(ID: ')[1][:-1]
-            except IndexError: sg.popup_error("No se pudo identificar la pregunta."); continue
-            if sg.popup_yes_no(f"¿Eliminar '{q_id}' y sus respuestas?", title="Confirmar") == 'Yes':
+            try: q_id = re.search(r'\(ID: (.*?)\)$', selected_q_display).group(1)
+            except (IndexError, AttributeError): sg.popup_error("No se pudo identificar la pregunta."); continue
+            if sg.popup_yes_no(f"¿Eliminar '{q_id}' y sus respuestas asociadas?", title="Confirmar") == 'Yes':
                 success, msg = hq.handle_delete_question(institution_name, group_name, q_id)
                 sg.popup(msg)
-                if success:
-                    refresh_list()
+                if success: refresh_list()
+
         elif event == '-FORM_Q_CANCEL-':
             window['-FORM_Q_FRAME-'].update(visible=False)
+
         elif event == '-FORM_Q_SAVE-':
             try:
-                q_data = {'id': values['-FORM_Q_ID-'], 'text': values['-FORM_Q_TEXT-'], 'type': values['-FORM_Q_TYPE-'], 'data_key': values['-FORM_Q_DK-'], 'polarity': 'positive' if values['-FORM_Q_POL_POS-'] else 'negative', 'order': int(values['-FORM_Q_ORDER-']), 'max_selections': int(values['-FORM_Q_MAX-']), 'allow_self_selection': values['-FORM_Q_SELF-']}
+                is_meta_perception = values['-FORM_Q_IS_META_PERCEPTION-']
+                
+                # --- INICIO DE LA LÓGICA CORREGIDA ---
+                q_data = {
+                    'id': values['-FORM_Q_ID-'], 
+                    'text': values['-FORM_Q_TEXT-'],
+                    
+                    # 1. El 'type' (Tipo Estructural) se asigna basado en el checkbox.
+                    'type': '[Meta-Percepción]' if is_meta_perception else '[Acción Real]',
+                    
+                    # 2. La 'category' (Categoría Temática) viene del campo de texto.
+                    'category': values['-FORM_Q_CATEGORY-'],
+                    
+                    'data_key': values['-FORM_Q_DK-'], 
+                    'polarity': 'positive' if values['-FORM_Q_POL_POS-'] else 'negative', 
+                    'order': int(values['-FORM_Q_ORDER-']), 
+                    'max_selections': int(values['-FORM_Q_MAX-']), 
+                    'allow_self_selection': values['-FORM_Q_SELF-'],
+                    
+                    # 3. Los flags internos se mantienen consistentes.
+                    'is_cognitive': is_meta_perception,
+                    'perceived_nominator': '[SELF]' if is_meta_perception else None
+                }
+                # --- FIN DE LA LÓGICA CORREGIDA ---
+                
                 if app_state.get('form_q_mode') == 'new':
                     success, msg = hq.handle_add_question(institution_name, group_name, q_data)
                 else:
                     success, msg = hq.handle_modify_question(institution_name, group_name, app_state.get('original_q_id'), q_data)
+                
                 sg.popup(msg)
                 if success:
                     window['-FORM_Q_FRAME-'].update(visible=False)
                     refresh_list()
-            except ValueError: sg.popup_error("'Orden' y 'Máx. Selecciones' deben ser números enteros.")
-            except Exception as e: sg.popup_error(f"Error: {e}")
+            except ValueError: 
+                sg.popup_error("'Orden' y 'Máx. Selecciones' deben ser números enteros.")
+            except Exception as e: 
+                sg.popup_error(f"Error inesperado al guardar: {e}")
     
     window.close()
     return return_value
 
-
 def window_questionnaire(institution_name, group_name, member_name):
-    """
-    Lanza y gestiona la ventana del Cuestionario de forma AISLADA.
-    """
     q_data = hquest.get_questionnaire_data_for_member(institution_name, group_name, member_name, app_data_ref=app_data)
     layout = create_layout_questionnaire(q_data, member_name, institution_name, group_name)
-    
     window = sg.Window("Cuestionario", layout, finalize=True, resizable=True)
     window.maximize()
-    
     action, data = 'open_members', {'school': institution_name, 'class_name': group_name}
 
     while True:
         event, values = window.read()
         
         if event in (sg.WIN_CLOSED, '-BACK_TO_MEMBERS-'):
-            break # Cierra esta ventana y vuelve al bucle principal
+            break
 
         if event == sg.WIN_CLOSED:
             action = 'exit'
             break
         
         if event == '-SAVE_Q-':
-            # Lógica de guardado (sin cambios)
             responses = {}
             for q in q_data.get('questions', []):
                 selections = [values.get(f"-Q_{q['data_key']}_{i}-") for i in range(q['max_selections']) if values.get(f"-Q_{q['data_key']}_{i}-") and values.get(f"-Q_{q['data_key']}_{i}-") != 'Seleccionar']
@@ -992,7 +879,6 @@ def window_questionnaire(institution_name, group_name, member_name):
             sg.popup(msg)
 
         elif event == '-PDF_TEMPLATE_Q-':
-            # Lógica de PDF (sin cambios)
             pdf_bytes, filename = pdf_generator.generate_class_questionnaire_template_pdf(institution_name, group_name)
             if pdf_bytes:
                 save_path = sg.popup_get_file('Guardar Plantilla', save_as=True, default_extension=".pdf", default_path=filename)
@@ -1010,7 +896,6 @@ def window_questionnaire(institution_name, group_name, member_name):
                 action = 'exit'
                 break
             
-            # Si se modificaron las preguntas, debemos recargar esta ventana
             sg.popup("Las preguntas han cambiado. El cuestionario se recargará.")
             action = 'open_questionnaire'
             data = {'school': institution_name, 'class_name': group_name, 'member': member_name}
@@ -1018,560 +903,175 @@ def window_questionnaire(institution_name, group_name, member_name):
             
     window.close()
     return action, data
-# --- BLOQUE 4.4: Ventanas de Navegación Principales (Instituciones y Grupos) ---
 
-def window_institutions():
-    """Lanza y gestiona la ventana principal de Instituciones en tamaño normal."""
-    layout = create_layout_institutions()
-    
-    # Se crea la ventana en su tamaño por defecto. Es redimensionable.
-    window = sg.Window("Tabla de Instituciones", layout, finalize=True, resizable=True)
-    
-    def refresh_list():
-        """Refresca la lista de instituciones y resetea los controles."""
-        institutions = sorted(list(app_data.schools_data.keys()))
-        window['-INST_SELECT-'].update(values=institutions, set_to_index=[])
-        window['-INST_ANNOTATIONS-'].update('')
-        window['-MOD_INST-'].update(disabled=True)
-        window['-DEL_INST-'].update(disabled=True)
-        window['-VIEW_GROUPS-'].update(disabled=True)
-
-    refresh_list()
-    action, data = None, None
-    
-    while True:
-        event, values = window.read()
-        
-        # El cierre de la ventana principal ('X') finaliza toda la aplicación.
-        if event in (sg.WIN_CLOSED, '-EXIT-'):
-            action = 'exit'
-            break
-            
-        selected_inst = values['-INST_SELECT-'][0] if values['-INST_SELECT-'] else None
-        
-        # Lógica para deshabilitar botones mientras el formulario está visible.
-        form_is_visible = window['-FORM_INST_FRAME-'].visible
-        window['-NEW_INST-'].update(disabled=form_is_visible)
-        window['-MOD_INST-'].update(disabled=form_is_visible or not selected_inst)
-        window['-DEL_INST-'].update(disabled=form_is_visible or not selected_inst)
-        window['-VIEW_GROUPS-'].update(disabled=form_is_visible or not selected_inst)
-        
-        if event == '-INST_SELECT-':
-            window['-FORM_INST_FRAME-'].update(visible=False)
-            window['-INST_ANNOTATIONS-'].update(app_data.schools_data.get(selected_inst, "") if selected_inst else "")
-        elif event == '-NEW_INST-':
-            app_state['form_inst_mode'] = 'new'
-            window['-FORM_INST_TITLE-'].update("Nueva Institución")
-            window['-FORM_INST_NAME-'].update(''); window['-FORM_INST_ANNOT-'].update('')
-            window['-FORM_INST_FRAME-'].update(visible=True)
-        elif event == '-MOD_INST-' and selected_inst:
-            app_state['form_inst_mode'] = 'modify'; app_state['original_inst_name'] = selected_inst
-            window['-FORM_INST_TITLE-'].update(f"Modificar: {selected_inst}")
-            window['-FORM_INST_NAME-'].update(selected_inst); window['-FORM_INST_ANNOT-'].update(values['-INST_ANNOTATIONS-'])
-            window['-FORM_INST_FRAME-'].update(visible=True)
-        elif event == '-FORM_INST_SAVE-':
-            form_name = values['-FORM_INST_NAME-']; form_annot = values['-FORM_INST_ANNOT-']
-            if app_state.get('form_inst_mode') == 'new':
-                success, msg = hinst.handle_add_institution(form_name, form_annot)
-            else:
-                success, msg = hinst.handle_modify_institution(app_state.get('original_inst_name'), form_name, form_annot)
-            sg.popup(msg)
-            if success:
-                window['-FORM_INST_FRAME-'].update(visible=False)
-                refresh_list()
-        elif event == '-FORM_INST_CANCEL-':
-            window['-FORM_INST_FRAME-'].update(visible=False)
-        elif event == '-VIEW_GROUPS-' and selected_inst:
-            action, data = 'open_groups', selected_inst
-            break
-        elif event == '-DEL_INST-' and selected_inst:
-            if sg.popup_yes_no(f"¿Eliminar '{selected_inst}' y TODOS sus datos?", title="Confirmar") == 'Yes':
-                success, msg = hinst.handle_delete_institution(selected_inst)
-                sg.popup(msg)
-                if success:
-                    refresh_list()
-        elif event == '-MANAGE_CSV-':
-            if window_csv_management({'school': selected_inst, 'group': None}):
-                log_message("Datos importados, refrescando instituciones.")
-                refresh_list()
-    
-    window.close()
-    return action, data
-
-def window_groups(institution_name):
-    """Lanza y gestiona la ventana de Grupos en tamaño normal."""
-    app_state['current_institution_viewing_groups'] = institution_name
-    layout = create_layout_groups(institution_name)
-    
-    # Se crea la ventana en su tamaño por defecto. Es redimensionable.
-    window = sg.Window(f"Grupos de: {institution_name}", layout, finalize=True, resizable=True)
-
-    def refresh_list():
-        """Refresca la lista de grupos y resetea los controles."""
-        groups = sorted([g['name'] for g in app_data.classes_data.get(institution_name, [])])
-        window['-GROUP_SELECT-'].update(values=groups, set_to_index=[])
-        for key in ['-MOD_GROUP-', '-DEL_GROUP-', '-VIEW_MEMBERS-', '-VIEW_SOCIOGRAM-', '-VIEW_MATRIX-', '-VIEW_DIANA-', '-PDF_SUMMARY-']:
-            if key in window.key_dict: window[key].update(disabled=True)
-        for key in ['-GROUP_COORD-', '-GROUP_INS2-', '-GROUP_INS3-', '-GROUP_SOST-', '-GROUP_ANNOT-']: window[key].update('')
-    
-    refresh_list()
-    action, data = 'open_institutions', institution_name
-    
-    while True:
-        event, values = window.read()
-        
-        # El cierre de la ventana ('X') finaliza toda la aplicación.
-        if event == sg.WIN_CLOSED:
-            action = 'exit'
-            break
-        
-        # El botón de "Volver" nos lleva a la pantalla anterior.
-        if event == '-BACK_TO_INST-':
-            break 
-            
-        selected_group = values['-GROUP_SELECT-'][0] if values['-GROUP_SELECT-'] else None
-        
-        # Lógica para deshabilitar botones mientras el formulario está visible.
-        form_is_visible = window['-FORM_GROUP_FRAME-'].visible
-        window['-NEW_GROUP-'].update(disabled=form_is_visible)
-        window['-MOD_GROUP-'].update(disabled=form_is_visible or not selected_group)
-        window['-DEL_GROUP-'].update(disabled=form_is_visible or not selected_group)
-        window['-VIEW_MEMBERS-'].update(disabled=form_is_visible or not selected_group)
-        window['-VIEW_SOCIOGRAM-'].update(disabled=form_is_visible or not selected_group)
-        window['-VIEW_MATRIX-'].update(disabled=form_is_visible or not selected_group)
-        window['-VIEW_DIANA-'].update(disabled=form_is_visible or not selected_group)
-        
-        if event == '-GROUP_SELECT-':
-            is_valid = selected_group is not None
-            for key in ['-MOD_GROUP-', '-DEL_GROUP-', '-VIEW_MEMBERS-', '-VIEW_SOCIOGRAM-', '-VIEW_MATRIX-', '-VIEW_DIANA-', '-PDF_SUMMARY-']:
-                if key in window.key_dict: window[key].update(disabled=not is_valid)
-            group_info = next((g for g in app_data.classes_data.get(institution_name, []) if g['name'] == selected_group), {}) if is_valid else {}
-            window['-GROUP_COORD-'].update(group_info.get('coordinator', '')); window['-GROUP_INS2-'].update(group_info.get('ins2', '')); window['-GROUP_INS3-'].update(group_info.get('ins3', '')); window['-GROUP_SOST-'].update(group_info.get('sostegno', '')); window['-GROUP_ANNOT-'].update(group_info.get('annotations', ''))
-            window['-FORM_GROUP_FRAME-'].update(visible=False)
-        elif event == '-NEW_GROUP-':
-            app_state['form_group_mode'] = 'new'
-            window['-FORM_GROUP_TITLE-'].update("Nuevo Grupo")
-            for key in ['-FORM_GROUP_NAME-', '-FORM_GROUP_COORD-', '-FORM_GROUP_INS2-', '-FORM_GROUP_INS3-', '-FORM_GROUP_SOST-', '-FORM_GROUP_ANNOT-']: window[key].update('')
-            window['-FORM_GROUP_FRAME-'].update(visible=True)
-        elif event == '-MOD_GROUP-' and selected_group:
-            app_state['form_group_mode'] = 'modify'; app_state['original_group_name'] = selected_group
-            group_info = next((g for g in app_data.classes_data.get(institution_name, []) if g['name'] == selected_group), {})
-            window['-FORM_GROUP_TITLE-'].update(f"Modificar: {selected_group}")
-            window['-FORM_GROUP_NAME-'].update(group_info.get('name', '')); window['-FORM_GROUP_COORD-'].update(group_info.get('coordinator', '')); window['-FORM_GROUP_INS2-'].update(group_info.get('ins2', '')); window['-FORM_GROUP_INS3-'].update(group_info.get('ins3', '')); window['-FORM_GROUP_SOST-'].update(group_info.get('sostegno', '')); window['-FORM_GROUP_ANNOT-'].update(group_info.get('annotations', ''))
-            window['-FORM_GROUP_FRAME-'].update(visible=True)
-        elif event == '-FORM_GROUP_SAVE-':
-            group_details = {'name': values['-FORM_GROUP_NAME-'], 'coordinator': values['-FORM_GROUP_COORD-'], 'ins2': values['-FORM_GROUP_INS2-'], 'ins3': values['-FORM_GROUP_INS3-'], 'sostegno': values['-FORM_GROUP_SOST-'], 'annotations': values['-FORM_GROUP_ANNOT-']}
-            if app_state.get('form_group_mode') == 'new':
-                success, msg = hgrp.handle_add_group(institution_name, group_details)
-            else:
-                success, msg = hgrp.handle_modify_group(institution_name, app_state.get('original_group_name'), group_details)
-            sg.popup(msg)
-            if success:
-                window['-FORM_GROUP_FRAME-'].update(visible=False)
-                refresh_list()
-        elif event == '-FORM_GROUP_CANCEL-':
-            window['-FORM_GROUP_FRAME-'].update(visible=False)
-        elif event == '-DEL_GROUP-' and selected_group:
-            if sg.popup_yes_no(f"¿Eliminar grupo '{selected_group}'?", title="Confirmar") == 'Yes':
-                success, msg = hgrp.handle_delete_group(institution_name, selected_group)
-                sg.popup(msg)
-                if success:
-                    refresh_list()
-        elif event in ['-VIEW_MEMBERS-', '-VIEW_SOCIOGRAM-', '-VIEW_MATRIX-', '-VIEW_DIANA-'] and selected_group:
-            action_map = {'-VIEW_MEMBERS-': 'open_members', '-VIEW_SOCIOGRAM-': 'open_sociogram', '-VIEW_MATRIX-': 'open_matrix', '-VIEW_DIANA-': 'open_diana'}
-            action, data = action_map[event], {'school': institution_name, 'class_name': selected_group}
-            break
-        elif event == '-PDF_SUMMARY-' and selected_group:
-            pdf_bytes, filename = pdf_generator.generate_class_summary_report_pdf(institution_name, selected_group)
-            if pdf_bytes:
-                save_path = sg.popup_get_file('Guardar PDF Resumen', save_as=True, default_extension=".pdf", default_path=filename)
-                if save_path:
-                   try:
-                       with open(save_path, 'wb') as f: f.write(pdf_bytes)
-                       sg.popup("PDF Resumen guardado.")
-                   except Exception as e: sg.popup_error(f"Error al guardar: {e}")
-            else: sg.popup_error("No se pudo generar el PDF Resumen.")
-            
-    window.close()
-    return action, data
-# --- BLOQUE 4.5: Ventanas de Navegación Secundarias (Miembros, Sociograma, Matriz, Diana) ---
-
-def window_members(institution_name, group_name):
-    """Lanza y gestiona la ventana de Miembros en tamaño normal."""
-    app_state['current_group_viewing_members'] = {'school': institution_name, 'class_name': group_name}
-    layout = create_layout_members(institution_name, group_name)
-    
-    # Se crea la ventana en su tamaño por defecto. Es redimensionable.
-    window = sg.Window(f"Miembros de: {group_name}", layout, finalize=True, resizable=True)
-
-    def refresh_list():
-        """Refresca la lista de miembros y resetea los controles."""
-        members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
-        member_names = hutils.generar_opciones_dropdown_miembros_main_select(members_list)
-        window['-MEMBER_SELECT-'].update(values=member_names, set_to_index=[])
-        for key in ['-MEMBER_COGNOME-', '-MEMBER_NOME-', '-MEMBER_INIZ-', '-MEMBER_ANNOT-']: window[key].update('')
-        for key in ['-MOD_MEMBER-', '-DEL_MEMBER-', '-VIEW_QUESTIONNAIRE-']: window[key].update(disabled=True)
-    
-    refresh_list()
-    action, data = 'open_groups', institution_name
-    
-    while True:
-        event, values = window.read()
-        
-        # El cierre de la ventana ('X') finaliza toda la aplicación.
-        if event == sg.WIN_CLOSED:
-            action = 'exit'
-            break
-        
-        # El botón de "Volver" nos lleva a la pantalla anterior.
-        if event == '-BACK_TO_GROUPS-':
-            break
-            
-        selected_name = values['-MEMBER_SELECT-'][0] if values['-MEMBER_SELECT-'] else None
-        
-        # Lógica para deshabilitar botones mientras el formulario está visible.
-        form_is_visible = window['-FORM_MEMBER_FRAME-'].visible
-        window['-NEW_MEMBER-'].update(disabled=form_is_visible)
-        window['-MOD_MEMBER-'].update(disabled=form_is_visible or not selected_name)
-        window['-DEL_MEMBER-'].update(disabled=form_is_visible or not selected_name)
-        window['-VIEW_QUESTIONNAIRE-'].update(disabled=form_is_visible or not selected_name)
-
-        if event == '-MEMBER_SELECT-':
-            is_valid = selected_name is not None
-            # Deshabilitar botones de Modificar/Eliminar/Cuestionario si no hay selección válida.
-            window['-MOD_MEMBER-'].update(disabled=not is_valid); window['-DEL_MEMBER-'].update(disabled=not is_valid); window['-VIEW_QUESTIONNAIRE-'].update(disabled=not is_valid)
-            
-            member_details = {}
-            if is_valid:
-                members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
-                member_details = next((m for m in members_list if f"{m.get('nome','').title()} {m.get('cognome','').title()}" == selected_name), {})
-            
-            # Actualizar campos de detalle.
-            window['-MEMBER_COGNOME-'].update(member_details.get('cognome', '')); window['-MEMBER_NOME-'].update(member_details.get('nome', '')); window['-MEMBER_INIZ-'].update(member_details.get('iniz', '')); window['-MEMBER_ANNOT-'].update(member_details.get('annotations', ''))
-            window['-FORM_MEMBER_FRAME-'].update(visible=False)
-        elif event == '-NEW_MEMBER-':
-            app_state['form_member_mode'] = 'new'
-            window['-FORM_MEMBER_TITLE-'].update("Nuevo Miembro")
-            for key in ['-FORM_MEMBER_COGNOME-', '-FORM_MEMBER_NOME-', '-FORM_MEMBER_INIZ-', '-FORM_MEMBER_DOB-', '-FORM_MEMBER_ANNOT-']: window[key].update('')
-            window['-FORM_MEMBER_SEXO_D-'].update(True)
-            window['-FORM_MEMBER_FRAME-'].update(visible=True)
-        elif event == '-MOD_MEMBER-' and selected_name:
-            app_state['form_member_mode'] = 'modify'
-            members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
-            d = next((m for m in members_list if f"{m.get('nome','').title()} {m.get('cognome','').title()}" == selected_name), {})
-            app_state['original_member_data'] = d
-            window['-FORM_MEMBER_TITLE-'].update(f"Modificar: {selected_name}")
-            window['-FORM_MEMBER_COGNOME-'].update(d.get('cognome', '').title()); window['-FORM_MEMBER_NOME-'].update(d.get('nome', '').title()); window['-FORM_MEMBER_INIZ-'].update(d.get('iniz', ''))
-            window['-FORM_MEMBER_SEXO_M-'].update(d.get('sexo') == 'Masculino'); window['-FORM_MEMBER_SEXO_F-'].update(d.get('sexo') == 'Femenino'); window['-FORM_MEMBER_SEXO_D-'].update(d.get('sexo', 'Desconocido') not in ['Masculino', 'Femenino'])
-            window['-FORM_MEMBER_DOB-'].update(d.get('fecha_nac', '')); window['-FORM_MEMBER_ANNOT-'].update(d.get('annotations', ''))
-            window['-FORM_MEMBER_FRAME-'].update(visible=True)
-        elif event == '-FORM_MEMBER_SAVE-':
-            sexo = 'Masculino' if values['-FORM_MEMBER_SEXO_M-'] else 'Femenino' if values['-FORM_MEMBER_SEXO_F-'] else 'Desconocido'
-            member_details = {'cognome': values['-FORM_MEMBER_COGNOME-'], 'nome': values['-FORM_MEMBER_NOME-'], 'iniz': values['-FORM_MEMBER_INIZ-'], 'sexo': sexo, 'fecha_nac': values['-FORM_MEMBER_DOB-'], 'annotations': values['-FORM_MEMBER_ANNOT-']}
-            if app_state.get('form_member_mode') == 'new':
-                success, msg = hfmember.handle_add_member(institution_name, group_name, member_details)
-            else:
-                original_data = app_state.get('original_member_data', {}); original_name_key = f"{original_data.get('nome','').title()} {original_data.get('cognome','').title()}"
-                success, msg = hfmember.handle_modify_member(institution_name, group_name, original_name_key, original_data, member_details)
-            sg.popup(msg)
-            if success:
-                window['-FORM_MEMBER_FRAME-'].update(visible=False)
-                refresh_list()
-        elif event == '-FORM_MEMBER_CANCEL-':
-            window['-FORM_MEMBER_FRAME-'].update(visible=False)
-        elif event == '-DEL_MEMBER-' and selected_name:
-            if sg.popup_yes_no(f"¿Seguro que quieres eliminar a '{selected_name}'?", title="Confirmar") == 'Yes':
-                success, msg = hmemb.handle_delete_member(institution_name, group_name, selected_name)
-                sg.popup(msg)
-                if success:
-                    refresh_list()
-        elif event == '-VIEW_QUESTIONNAIRE-' and selected_name:
-            action, data = 'open_questionnaire', {'school': institution_name, 'class_name': group_name, 'member': selected_name}
-            break
-    
-    window.close()
-    return action, data
-
-def run_sociogram_window(file_path):
-    """
-    Función que se ejecuta en el hilo principal para crear y manejar la ventana
-    del sociograma con Tkinter y CEF, utilizando las importaciones globales.
-    """
-    # Ya no se necesitan importaciones locales ni bloques try-except para ellas.
-    # Se asume que 'tk' y 'cef' ya están importados globalmente.
-    
-    # --- Inicialización de CEF ---
-    settings = { "multi_threaded_message_loop": True }
-    cef.Initialize(settings=settings)
-
-    class MainApp(tk.Tk):
-        """La ventana principal de Tkinter que contendrá el navegador."""
-        def __init__(self, file_url):
-            super().__init__()
-            self.title("Sociograma Interactivo")
-            self.geometry("1200x800")
-            
-            self.browser_frame = tk.Frame(self, bg="white")
-            self.browser_frame.pack(fill=tk.BOTH, expand=True)
-
-            window_info = cef.WindowInfo()
-            window_info.SetAsChild(self.browser_frame.winfo_id())
-
-            self.browser = cef.CreateBrowserSync(window_info, url=file_url)
-
-            self.browser_frame.bind("<Configure>", self.on_resize)
-            self.protocol("WM_DELETE_WINDOW", self.on_close)
-            self.message_loop_timer()
-
-        def on_resize(self, event):
-            if self.browser:
-                self.browser.WasResized()
-        
-        def message_loop_timer(self):
-            cef.MessageLoopWork()
-            self.after(10, self.message_loop_timer)
-
-        def on_close(self):
-            if self.browser:
-                # El argumento True fuerza el cierre inmediato del navegador
-                self.browser.CloseBrowser(True)
-            self.destroy()
-
-    file_url_for_cef = f'file:///{os.path.abspath(file_path)}'
-    
-    app = MainApp(file_url_for_cef)
-    app.mainloop()
-    
-    cef.Shutdown()
-    print("Ventana de sociograma y proceso CEF cerrados correctamente.")
+# En Red_Sociograma_App.py
 
 def window_sociogram(institution_name, group_name):
     """
-    Lanza y gestiona la ventana del Sociograma de forma AISLADA.
+    Versión FINAL, COMPLETA Y CON LOGS. Gestiona la ventana del sociograma.
+    - Incluye todos los controles de la interfaz, como el resaltado de líderes.
+    - Maneja todos los modos de red (CIVSOC, Precisión Global, etc.).
+    - Realiza validaciones de preguntas específicas para cada modo.
+    - Utiliza el navegador web predeterminado para la visualización.
     """
-    # Preparar datos para el layout
     app_state['current_group_viewing_members'] = {'school': institution_name, 'class_name': group_name}
     participant_options = sociogram_utils.get_participant_options(app_state, app_data, hutils)
-    relation_options = sociogram_utils.get_relation_options(app_state, app_data)
+    relation_options = sociogram_utils.get_relation_options(institution_name, group_name, app_data)
     
     layout = create_layout_sociogram(institution_name, group_name, relation_options, participant_options)
-    
     window = sg.Window("Lanzador de Sociograma Interactivo", layout, finalize=True, resizable=True)
     window.maximize()
     
     action, data = 'open_groups', institution_name
 
+    aggregation_map = {
+        "Red Real (Acciones Directas)": "real_actions",
+        "Red de Relaciones Completas (CIVSOC)": "civsoc_matrix",
+        "Red de Meta-Percepción (SELF)": "meta_perceptions",
+        "Análisis de Precisión (Global)": "accuracy_analysis",
+    }
+    all_defs = app_data.get_class_question_definitions(institution_name, group_name)
+
     while True:
         event, values = window.read()
         
         if event in (sg.WIN_CLOSED, '-BACK_TO_GROUPS-'):
-            break # Cierra esta ventana y devuelve el control
-
+            break
         if event == sg.WIN_CLOSED:
             action = 'exit'
             break
-            
-        # Lógica de los botones de selección rápida de checkboxes
-        if event in ('-SOC_SEL_ALL-', '-SOC_SEL_NONE-', '-SOC_SEL_POS-', '-SOC_SEL_NEG-'):
-            for opt in relation_options:
-                widget_key = f"-SOC_REL__{opt['data_key']}__"
-                if widget_key in window.key_dict:
-                    if event == '-SOC_SEL_ALL-': window[widget_key].update(True)
-                    elif event == '-SOC_SEL_NONE-': window[widget_key].update(False)
-                    elif event == '-SOC_SEL_POS-': window[widget_key].update(opt['polarity'] == 'positive')
-                    elif event == '-SOC_SEL_NEG-': window[widget_key].update(opt['polarity'] == 'negative')
-        
-        # Lógica para habilitar/deshabilitar el campo de valor
+
+        if event == '-SOC_AGGREGATION_MODE-':
+            # El perceptor/foco no es necesario para ningún modo de sociograma en la versión actual.
+            is_perceiver_needed = False 
+            window['-SOC_PERCEIVER-'].update(disabled=not is_perceiver_needed, value='')
+
         if event in ('-SOC_HL_TOPN-', '-SOC_HL_KTH-'):
             window['-SOC_HL_VALUE-'].update(disabled=False)
         elif event == '-SOC_HL_NONE-':
             window['-SOC_HL_VALUE-'].update(disabled=True)
+
+        if event in ('-SOC_SEL_ALL-', '-SOC_SEL_NONE-', '-SOC_SEL_POS-', '-SOC_SEL_NEG-'):
+            for opt in relation_options:
+                key = f"-SOC_REL__{opt['data_key']}__"
+                if key in window.key_dict:
+                    if event == '-SOC_SEL_ALL-': window[key].update(True)
+                    elif event == '-SOC_SEL_NONE-': window[key].update(False)
+                    elif event == '-SOC_SEL_POS-': window[key].update(opt['polarity'] == 'positive')
+                    elif event == '-SOC_SEL_NEG-': window[key].update(opt['polarity'] == 'negative')
         
-        # Lógica para generar el sociograma
         if event == '-SOC_GENERATE_INTERACTIVE-':
+            log_message("[DEBUG] Evento '-SOC_GENERATE_INTERACTIVE-' detectado.", "debug")
+            sg.popup_quick_message("Procesando red...", background_color='lightblue')
+
+            aggregation_mode_text = values['-SOC_AGGREGATION_MODE-']
+            aggregation_mode = aggregation_map.get(aggregation_mode_text, 'real_actions')
             selected_keys = [k.split('__')[1] for k, v in values.items() if k.startswith('-SOC_REL__') and v]
+            perceiver_name = values['-SOC_PERCEIVER-']
+
+            is_valid, error_msg = True, ""
+            selected_defs = [d for d in all_defs.values() if d.get('data_key') in selected_keys]
             if not selected_keys:
-                sg.popup_error("Por favor, selecciona al menos una relación para dibujar."); 
+                is_valid, error_msg = False, "Debe seleccionar al menos una pregunta."
+            
+            if is_valid:
+                if aggregation_mode == 'civsoc_matrix':
+                    counts = {'ap': sum(1 for d in selected_defs if d.get('type')=='[Acción Real]' and d.get('polarity')=='positive'), 'an': sum(1 for d in selected_defs if d.get('type')=='[Acción Real]' and d.get('polarity')=='negative'), 'mp': sum(1 for d in selected_defs if d.get('type')=='[Meta-Percepción]' and d.get('polarity')=='positive'), 'mn': sum(1 for d in selected_defs if d.get('type')=='[Meta-Percepción]' and d.get('polarity')=='negative')}
+                    if len(selected_defs) != 4 or not all(c == 1 for c in counts.values()):
+                        is_valid, error_msg = False, "Para el modo CIVSOC, debe seleccionar exactamente 4 preguntas: una para cada combinación de Acción/Meta y Positiva/Negativa."
+                elif aggregation_mode == 'accuracy_analysis':
+                    if len(selected_defs) != 2:
+                        is_valid, error_msg = False, "Para el Análisis de Precisión, debe seleccionar exactamente 2 preguntas: una de '[Acción Real]' y una de '[Meta-Percepción]'."
+                    else:
+                        action_q = next((d for d in selected_defs if d.get('type') == '[Acción Real]'), None)
+                        meta_q = next((d for d in selected_defs if d.get('type') == '[Meta-Percepción]'), None)
+                        if not action_q or not meta_q:
+                            is_valid, error_msg = False, "La selección es incorrecta. Debe incluir una pregunta de '[Acción Real]' Y una de '[Meta-Percepción]'."
+                        elif action_q.get('polarity') != meta_q.get('polarity'):
+                            is_valid, error_msg = False, "Las polaridades no coinciden. Ambas preguntas deben ser positivas o ambas deben ser negativas."
+
+            if not is_valid:
+                sg.popup_error(f"Error de Selección:\n\n{error_msg}", title="Configuración Incorrecta")
+                log_message(f"[DEBUG] Validación fallida: {error_msg}", "error")
                 continue
+            
+            val_str = values.get('-SOC_HL_VALUE-', '1')
+            highlight_val = int(val_str) if val_str.isdigit() else 1
 
             params = {
                 'node_gender_filter': 'Masculino' if values.get('-SOC_GENDER_M-') else 'Femenino' if values.get('-SOC_GENDER_F-') else 'Todos',
-                'label_display_mode': 'iniciales' if values.get('-SOC_LABEL_MODE-') == 'Iniciales' else 'nombre_apellido',
+                'label_display_mode': 'iniciales' if values.get('-SOC_LABEL_MODE-') == 'Iniciales' else 'anónimo' if values.get('-SOC_LABEL_MODE-') == 'Anónimo' else 'nombre_apellido',
                 'connection_gender_type': 'mismo_genero' if values.get('-SOC_CONN_SAME-') else 'diferente_genero' if values.get('-SOC_CONN_DIFF-') else 'todas',
-                'active_members_filter': values.get('-SOC_ACTIVE_ONLY-', False),
+                'active_members_filter': values.get('-SOC_ACTIVE_ONLY-', False), 
                 'nominators_option': values.get('-SOC_SHOW_ISOLATES-', True),
-                'received_color_filter': values.get('-SOC_COLOR_RECEIVERS-', False),
-                'reciprocal_nodes_color_filter': values.get('-SOC_COLOR_RECIP_NODES-', False),
+                'reciprocal_nodes_color_filter': values.get('-SOC_COLOR_RECIP_NODES-', False), 
                 'style_reciprocal_links': values.get('-SOC_RECIPROCAL_STYLE-', True),
-                'selected_participant_focus': next((val for txt, val in participant_options if txt == values.get('-SOC_FOCUS_PARTICIPANT-')), None),
+                'selected_participant_focus': next((p[1] for p in participant_options if p[0] == values.get('-SOC_FOCUS_PARTICIPANT-')), None),
                 'connection_focus_mode': 'outgoing' if values.get('-SOC_FOCUS_OUT-') else 'incoming' if values.get('-SOC_FOCUS_IN-') else 'all',
-                'layout_to_use': 'cose',
+                'layout_to_use': 'cose', 
+                'aggregation_mode': aggregation_mode, 
+                'perceiver_name': perceiver_name,
+                'received_color_filter': values.get('-SOC_COLOR_RECEIVERS-', False),
                 'highlight_mode': 'top_n' if values.get('-SOC_HL_TOPN-') else 'k_th' if values.get('-SOC_HL_KTH-') else 'none',
-                'highlight_value': int(values.get('-SOC_HL_VALUE-', 1)) if str(values.get('-SOC_HL_VALUE-')).isdigit() else 1
+                'highlight_value': highlight_val
             }
+            log_message(f"[DEBUG] Parámetros para el motor: {params}", "debug")
             
             output_path = os.path.join(os.getcwd(), "sociograma_interactivo.html")
             window.set_cursor('watch'); window.refresh()
+            
+            log_message("[DEBUG] Llamando al motor sociogram_engine.generate_interactive_html...", "debug")
             html_content = sociogram_engine.generate_interactive_html(
                 school_name=institution_name, class_name=group_name, app_data_ref=app_data,
                 selected_data_keys=selected_keys, **params
             )
-            result_path = sociogram_engine.save_interactive_sociogram(html_content=html_content, output_path=output_path) if html_content else None
+            
+            if html_content:
+                log_message(f"[DEBUG] Contenido HTML generado (longitud: {len(html_content)}).", "info")
+            else:
+                log_message("[DEBUG] El motor NO devolvió contenido HTML (resultado nulo o vacío).", "error")
+
             window.set_cursor('arrow')
             
-            if result_path:
-                webbrowser.open(f'file:///{os.path.abspath(result_path)}')
-                sg.popup_ok("El sociograma se ha abierto en tu navegador web.", "Éxito")
+            if html_content:
+                result_path = sociogram_engine.save_interactive_sociogram(html_content=html_content, output_path=output_path)
+                
+                try:
+                    webbrowser.open(f'file:///{os.path.abspath(result_path)}')
+                    log_message(f"[INFO] Sociograma abierto en el navegador web predeterminado: {result_path}", "info")
+                except Exception as e:
+                    log_message(f"[ERROR] No se pudo abrir el sociograma en el navegador. Error: {e}", "error")
+                    sg.popup_error(f"Se generó el sociograma, pero no se pudo abrir automáticamente.\n\nPuedes abrirlo manualmente en:\n{result_path}\n\nError: {e}")
             else:
-                sg.popup_error("No se pudo generar el archivo del sociograma.(Recuerde abrir la aplicacion como administrador)")
+                sg.popup_error("No se pudo generar el archivo del sociograma. Revisa la consola para más detalles.")
             
     window.close()
     return action, data
+
+# --- BLOQUE 7 DE 10: FUNCIONES DE VENTANAS DE ANÁLISIS (MATRIZ Y DIANA) ---
 
 def window_sociomatrix(institution_name, group_name):
     """
-    Lanza y gestiona la ventana de la Matriz Sociométrica de forma AISLADA.
+    Versión final: Análisis de Precisión es global, sin foco.
     """
+    app_state['current_group_viewing_members'] = {'school': institution_name, 'class_name': group_name}
     layout = create_layout_sociomatrix(institution_name, group_name)
-    window = sg.Window(f"Matriz de: {group_name}", layout, finalize=True, resizable=True)
+    window = sg.Window(f"Matriz Sociométrica: Controles", layout, finalize=True, resizable=True)
     window.maximize()
-    
-    # Poblar dinámicamente la información de los checkboxes
-    defs = app_data.get_class_question_definitions(institution_name, group_name)
-    q_widgets_info = {} 
-    if defs:
-        # Ordenar para consistencia visual
-        sorted_q_items = sorted(defs.items(), key=lambda item: (item[1].get('order', 99), item[0]))
-        for q_id, q_def in sorted_q_items:
-            widget_key = f"-MATRIXQ__{q_def.get('data_key')}__"
-            q_widgets_info[widget_key] = {'polarity': q_def.get('polarity')}
     
     action, data = 'open_groups', institution_name
-    last_generated_header = []
-    last_generated_data = []
+    last_generated_header, last_generated_data = [], []
     
-    while True:
-        event, values = window.read()
-        
-        if event in (sg.WIN_CLOSED, '-BACK_TO_GROUPS-'):
-            break # Cierra esta ventana y devuelve el control
-
-        if event == sg.WIN_CLOSED:
-            action = 'exit'
-            break
-            
-        # Lógica para los botones de selección rápida de checkboxes
-        if event in ('-MATRIX_ALL-', '-MATRIX_NONE-', '-MATRIX_POS-', '-MATRIX_NEG-'):
-            for key, info in q_widgets_info.items():
-                if key in window.key_dict:
-                    if event == '-MATRIX_ALL-': window[key].update(True)
-                    elif event == '-MATRIX_NONE-': window[key].update(False)
-                    elif event == '-MATRIX_POS-': window[key].update(info['polarity'] == 'positive')
-                    elif event == '-MATRIX_NEG-': window[key].update(info['polarity'] == 'negative')
-                    
-        elif event == '-MATRIX_UPDATE-':
-            selected_keys = [key.split('__')[1] for key, val in values.items() if isinstance(key, str) and key.startswith('-MATRIXQ__') and val]
-            if not selected_keys:
-                sg.popup_ok("Selecciona al menos una pregunta para generar la matriz."); continue
-
-            result = hsm.handle_draw_sociomatrix_data(institution_name, group_name, selected_keys)
-            
-            if result and result.get('success'):
-                last_generated_header = result.get('header', [])
-                last_generated_data = result.get('data', [])
-                row_colors = result.get('row_colors', [])
-                window['-MATRIX_TABLE-'].update(values=last_generated_data, row_colors=row_colors)
-            else:
-                last_generated_header, last_generated_data = [], []
-                sg.popup_error(result.get('message', "Ocurrió un error."))
-
-        elif event == '-MATRIX_PDF-':
-            if not last_generated_header or not last_generated_data:
-                sg.popup_error("Primero debes generar una matriz válida."); continue
-
-            pdf_bytes, filename_or_error = pdf_generator.generate_sociomatrix_pdf(institution_name, group_name, last_generated_header, last_generated_data)
-
-            if pdf_bytes:
-                save_path = sg.popup_get_file('Guardar PDF', save_as=True, default_extension=".pdf", default_path=filename_or_error)
-                if save_path:
-                    try:
-                        with open(save_path, 'wb') as f: f.write(pdf_bytes)
-                        sg.popup(f"Matriz guardada en:\n{save_path}")
-                    except Exception as e: sg.popup_error(f"Error al guardar:\n{e}")
-            else:
-                sg.popup_error(f"No se pudo generar el PDF:\n{filename_or_error}")
-
-    window.close()
-    return action, data
-
-def window_diana(institution_name, group_name):
-    """
-    Lanza y gestiona la ventana de la Diana de Afinidad, AHORA CON
-    LA FUNCIONALIDAD DE ZOOM CORREGIDA.
-    """
-    # Preparar datos para el layout
-    app_state['current_group_viewing_members'] = {'school': institution_name, 'class_name': group_name}
-    relation_options = sociogram_utils.get_relation_options(app_state, app_data)
+    # --- MODIFICACIÓN: El mapa ahora refleja que 'accuracy_analysis' no usa foco ---
+    aggregation_map = {
+        "Matriz de Elecciones (Estándar)": "real_actions",
+        "Matriz de Relaciones Completas (CIVSOC)": "civsoc_matrix",
+        "Meta-Percepción (SELF)": "meta_perceptions",
+        "Análisis de Precisión": "accuracy_analysis", # Nombre actualizado
+    }
     
-    layout = create_layout_diana(institution_name, group_name, relation_options)
-    window = sg.Window("Diana de Afinidad", layout, finalize=True, resizable=True)
-    window.maximize()
-    
-    original_image_bytes = None
-    
-    # --- INICIO DE LA CORRECCIÓN ---
-
-    def update_diana_image(zoom_level=100):
-        """
-        Función auxiliar interna para redimensionar y actualizar la imagen de la diana.
-        """
-        if not original_image_bytes: return
-        try:
-            # Se necesita Pillow para esta operación
-            from PIL import Image
-            img = Image.open(io.BytesIO(original_image_bytes))
-            
-            # Obtener el tamaño del contenedor para un escalado inicial correcto
-            container_size = window['-DIANA_IMAGE_CONTAINER-'].get_size()
-            widget_width, widget_height = container_size[0] - 20, container_size[1] - 20
-            
-            if widget_width <= 0 or widget_height <= 0: return # Evitar errores si la ventana es muy pequeña
-
-            img_width, img_height = img.size
-            scale = min(widget_width / img_width, widget_height / img_height) if img_width > 0 and img_height > 0 else 1
-            
-            # Aplicar el nivel de zoom del slider
-            final_scale = scale * (zoom_level / 100.0)
-            new_size = (int(img_width * final_scale), int(img_height * final_scale))
-
-            if new_size[0] < 10 or new_size[1] < 10: return # Evitar redimensionar a tamaños minúsculos
-            
-            img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
-            
-            with io.BytesIO() as bio:
-                img_resized.save(bio, format="PNG")
-                img_bytes_for_gui = bio.getvalue()
-            
-            window['-DIANA_IMAGE-'].update(data=img_bytes_for_gui)
-            window['-DIANA_ZOOM_TEXT-'].update(f"{int(zoom_level)}%")
-        except ImportError:
-            log_message("Pillow no está instalado, el zoom no funcionará.", "warning")
-        except Exception as e:
-            log_message(f"Error al aplicar zoom: {e}", "error")
-
-    # --- FIN DE LA CORRECCIÓN ---
-
-    # Lógica para los botones de selección rápida (sin cambios)
-    defs = app_data.get_class_question_definitions(institution_name, group_name)
-    q_widgets_info = {}
-    if defs:
-        for opt in relation_options:
-            data_key = opt['data_key']
-            widget_key = f"-DIANA_Q__{data_key}__"
-            polarity = next((d.get('polarity', 'neutral') for d in defs.values() if d.get('data_key') == data_key), 'neutral')
-            q_widgets_info[widget_key] = {'polarity': polarity}
-
-    action = 'open_groups'
+    all_defs = app_data.get_class_question_definitions(institution_name, group_name)
+    relation_options = sociogram_utils.get_relation_options(institution_name, group_name, app_data)
 
     while True:
         event, values = window.read()
@@ -1579,7 +1079,241 @@ def window_diana(institution_name, group_name):
         if event in (sg.WIN_CLOSED, '-BACK_TO_GROUPS-'): break
         if event == sg.WIN_CLOSED: action = 'exit'; break
 
-        # Eventos de los botones de selección rápida
+        if event == '-MATRIX_AGGREGATION_MODE-':
+            mode_text = values[event]
+            
+            # El foco ahora NUNCA se activa, ya que ningún modo lo requiere
+            is_perceiver_needed = False 
+            window['-MATRIX_PERCEIVER-'].update(disabled=not is_perceiver_needed)
+
+            required_type = None
+            if mode_text == "Matriz de Elecciones (Estándar)":
+                required_type = '[Acción Real]'
+            elif mode_text == "Meta-Percepción (SELF)":
+                required_type = '[Meta-Percepción]'
+
+            for opt in relation_options:
+                key = f"-MATRIXQ__{opt['data_key']}__"
+                q_def = next((d for d in all_defs.values() if d.get('data_key') == opt['data_key']), None)
+                if key in window.key_dict and q_def:
+                    if required_type:
+                        should_be_checked = (q_def.get('type') == required_type)
+                        window[key].update(should_be_checked)
+                    elif mode_text in ["Matriz de Relaciones Completas (CIVSOC)", "Análisis de Precisión"]: # Nombre actualizado
+                        window[key].update(False)
+            
+        if event in ('-MATRIX_ALL-', '-MATRIX_NONE-', '-MATRIX_POS-', '-MATRIX_NEG-'):
+            for opt in relation_options:
+                key = f"-MATRIXQ__{opt['data_key']}__"
+                if key in window.key_dict:
+                    if event == '-MATRIX_ALL-': window[key].update(True)
+                    elif event == '-MATRIX_NONE-': window[key].update(False)
+                    elif event == '-MATRIX_POS-': window[key].update(opt['polarity'] == 'positive')
+                    elif event == '-MATRIX_NEG-': window[key].update(opt['polarity'] == 'negative')
+
+        elif event == '-MATRIX_UPDATE-':
+            sg.popup_quick_message("Validando y generando...", background_color='lightblue')
+            
+            aggregation_mode = aggregation_map.get(values['-MATRIX_AGGREGATION_MODE-'], 'real_actions')
+            selected_keys = [k.split('__')[1] for k, v in values.items() if k.startswith('-MATRIXQ__') and v]
+            html_content = ""
+            
+            is_valid = True
+            error_msg = ""
+            selected_defs = [d for d in all_defs.values() if d.get('data_key') in selected_keys]
+            
+            perceiver_name = values['-MATRIX_PERCEIVER-']
+
+            # --- MODIFICACIÓN: La validación de foco ya no incluye 'accuracy_analysis' ---
+            if not selected_keys:
+                is_valid, error_msg = False, "Debe seleccionar al menos una pregunta."
+            
+            if is_valid:
+                # =============================================================================
+                # INICIO DEL BLOQUE DE CÓDIGO CORREGIDO Y ROBUSTO
+                # =============================================================================
+                
+                # Validación para: Matriz de Elecciones (Estándar)
+                if aggregation_mode == 'real_actions':
+                    if any(d.get('is_cognitive') for d in selected_defs):
+                        is_valid, error_msg = False, "Este modo solo permite preguntas de '[Acción Real]'."
+                
+                # Validación para: Meta-Percepción (SELF)
+                elif aggregation_mode == 'meta_perceptions':
+                    # Verifica que TODAS las preguntas seleccionadas sean de tipo [Meta-Percepción]
+                    if any(d.get('type') != '[Meta-Percepción]' for d in selected_defs):
+                        is_valid, error_msg = False, "Este modo solo permite preguntas de '[Meta-Percepción]'."
+                
+                # Validación para: Matriz de Relaciones Completas (CIVSOC)
+                elif aggregation_mode == 'civsoc_matrix':
+                    if len(selected_defs) != 4:
+                        is_valid, error_msg = False, f"Se requieren exactamente 4 preguntas, pero ha seleccionado {len(selected_defs)}."
+                    else:
+                        # Cuenta cuántas preguntas hay de cada tipo/polaridad requerida
+                        counts = {
+                            'accion_pos': sum(1 for d in selected_defs if d.get('type') == '[Acción Real]' and d.get('polarity') == 'positive'),
+                            'accion_neg': sum(1 for d in selected_defs if d.get('type') == '[Acción Real]' and d.get('polarity') == 'negative'),
+                            'meta_pos': sum(1 for d in selected_defs if d.get('type') == '[Meta-Percepción]' and d.get('polarity') == 'positive'),
+                            'meta_neg': sum(1 for d in selected_defs if d.get('type') == '[Meta-Percepción]' and d.get('polarity') == 'negative')
+                        }
+                        # Verifica que haya exactamente una de cada una
+                        if not all(c == 1 for c in counts.values()):
+                            is_valid, error_msg = False, "La selección es incorrecta. Debe haber exactamente una pregunta para cada combinación:\n\n- Acción Real (Positiva)\n- Acción Real (Negativa)\n- Meta-Percepción (Positiva)\n- Meta-Percepción (Negativa)"
+                
+                # Validación para: Análisis de Precisión
+                elif aggregation_mode == 'accuracy_analysis':
+                    # Primero, verifica que haya exactamente dos preguntas seleccionadas
+                    if len(selected_defs) != 2:
+                        is_valid, error_msg = False, "Debe seleccionar exactamente 2 preguntas: una de '[Acción Real]' y una de '[Meta-Percepción]'."
+                    else:
+                        # Busca explícitamente la pregunta de Acción y la de Meta, sin importar su orden
+                        action_q = next((d for d in selected_defs if d.get('type') == '[Acción Real]'), None)
+                        meta_q = next((d for d in selected_defs if d.get('type') == '[Meta-Percepción]'), None)
+
+                        # Verifica que ambos tipos de pregunta se hayan encontrado
+                        if not action_q or not meta_q:
+                            is_valid, error_msg = False, "La selección es incorrecta. Debe incluir una pregunta de '[Acción Real]' Y una de '[Meta-Percepción]'."
+                        # Verifica que las polaridades de las dos preguntas encontradas coincidan
+                        elif action_q.get('polarity') != meta_q.get('polarity'):
+                            is_valid, error_msg = False, "Las polaridades no coinciden. Ambas preguntas (Acción Real y Meta-Percepción) deben ser positivas o ambas deben ser negativas."            
+            if not is_valid:
+                sg.popup_error(f"Error de Selección para '{values['-MATRIX_AGGREGATION_MODE-']}':\n\n{error_msg}", title="Configuración Incorrecta")
+                continue
+            
+            network_data = hutils.get_aggregated_network(institution_name, group_name, aggregation_mode, app_data, perceiver_name, selected_keys)
+            
+            if aggregation_mode == 'civsoc_matrix':
+                q_keys = {
+                    'accion_pos': next(d['data_key'] for d in selected_defs if d.get('type') == '[Acción Real]' and d.get('polarity') == 'positive'),
+                    'accion_neg': next(d['data_key'] for d in selected_defs if d.get('type') == '[Acción Real]' and d.get('polarity') == 'negative'),
+                    'meta_pos': next(d['data_key'] for d in selected_defs if d.get('type') == '[Meta-Percepción]' and d.get('polarity') == 'positive'),
+                    'meta_neg': next(d['data_key'] for d in selected_defs if d.get('type') == '[Meta-Percepción]' and d.get('polarity') == 'negative')
+                }
+                matrix_data, members, legend_dict = hgrp.calculate_civsoc_matrix(
+                    institution_name, group_name, q_keys,
+                    allow_self_on_diagonal=values['-MATRIX_ALLOW_SELF-']
+                )
+                header = ['Miembro'] + [m.get('iniz', 'N/A') for m in members]
+                data_with_names = [[f"{m.get('cognome', '')}, {m.get('nome', '')}".strip(', ')] + row for m, row in zip(members, matrix_data)]
+                color_map = { "1": "#a8dada", "2": "#f9a8a8", "3": "#d5aaff", "4": "#ffd5a8", "5": "#64b5f6", "6": "#ff8a80", "7": "#ffb74d", "8": "#b39ddb", "0": "#e0e0e0", "X": "#ffffff" }
+                legend_html = "<div class='legend'><h4>Leyenda (CIVSOC)</h4>" + "".join([f"<div class='legend-item'><span class='legend-color-box' style='background-color:{color_map.get(c, '#fff')};'></span> <b>{c}</b>: {d}</div>" for c, d in sorted(legend_dict.items(), key=lambda item: int(item[0]))]) + "</div>"
+                html_content = hsm.generate_html_for_matrix(header, data_with_names, cell_color_map=color_map, legend_html=legend_html)
+                last_generated_header, last_generated_data = header, data_with_names
+
+            elif aggregation_mode == 'accuracy_analysis':
+                action_key = next(d['data_key'] for d in selected_defs if d.get('type') == '[Acción Real]')
+                meta_key = next(d['data_key'] for d in selected_defs if d.get('type') == '[Meta-Percepción]')
+                matrix_data, members, legend_dict = hgrp.calculate_accuracy_matrix(
+                    institution_name, group_name, action_key, meta_key,
+                    allow_self_on_diagonal=values['-MATRIX_ALLOW_SELF-']
+                )
+                header = ['Miembro (Ego)'] + [m.get('iniz', 'N/A') for m in members]
+                data_with_names = [[f"{m.get('cognome', '')}, {m.get('nome', '')}".strip(', ')] + row for m, row in zip(members, matrix_data)]
+                color_map = {"1": "#a5d6a7", "2": "#ef9a9a", "3": "#90caf9", "0": "#f5f5f5", "X": "#ffffff"}
+                legend_html = "<div class='legend'><h4>Leyenda de Precisión</h4>" + "".join([f"<div class='legend-item'><span class='legend-color-box' style='background-color:{color_map.get(c, '#fff')};'></span> <b>{c}</b>: {d}</div>" for c, d in sorted(legend_dict.items(), key=lambda item: int(item[0]))]) + "</div>"
+                html_content = hsm.generate_html_for_matrix(header, data_with_names, cell_color_map=color_map, legend_html=legend_html)
+                last_generated_header, last_generated_data = header, data_with_names
+            
+            else:
+                result = hsm.handle_draw_sociomatrix_data(
+                    institution_name=institution_name,
+                    group_name=group_name,
+                    selected_data_keys_list=selected_keys,
+                    allow_self_on_diagonal=values['-MATRIX_ALLOW_SELF-'],
+                    network_data_override=network_data
+                )
+                if result and result.get('success'):
+                    html_content = hsm.generate_html_for_matrix(result.get('header', []), result.get('data', []))
+                    last_generated_header, last_generated_data = result.get('header', []), result.get('data', [])
+                else:
+                    sg.popup_error(result.get('message', "Error al generar datos para la matriz."))
+                    continue
+
+            if html_content:
+                try:
+                    filepath = os.path.join(os.getcwd(), "matriz_sociometrica_temp.html")
+                    with open(filepath, 'w', encoding='utf-8') as f: f.write(html_content)
+                    webbrowser.open(f'file:///{os.path.abspath(filepath)}')
+                    window['-MATRIX_STATUS-'].update("¡Éxito! La matriz se ha abierto en una nueva pestaña de su navegador.")
+                except Exception as e: sg.popup_error(f"Error al generar o abrir el archivo HTML: {e}")
+        
+        elif event == '-MATRIX_PDF-':
+            if not last_generated_header:
+                sg.popup_error("Primero debes generar una matriz con el botón 'Generar y Abrir Matriz'.")
+                continue
+            pdf_bytes, filename = pdf_generator.generate_sociomatrix_pdf(institution_name, group_name, last_generated_header, last_generated_data)
+            if pdf_bytes:
+                save_path = sg.popup_get_file('Guardar PDF de la Matriz', save_as=True, default_extension=".pdf", default_path=filename)
+                if save_path:
+                    try:
+                        with open(save_path, 'wb') as f: f.write(pdf_bytes)
+                        sg.popup("PDF de la Matriz guardado exitosamente.")
+                    except Exception as e: sg.popup_error(f"Error al guardar el archivo: {e}")
+            else:
+                sg.popup_error("No se pudo generar el PDF.")
+            
+    window.close()
+    return action, data
+
+def window_diana(institution_name, group_name):
+    """
+    Versión FINAL. Lanza y gestiona la ventana de Análisis Gráfico en Diana.
+    - Llama a la función de dibujo correcta (`generate_affinity_diana_image` o `generate_distance_diana_image`) según el modo.
+    """
+    app_state['current_group_viewing_members'] = {'school': institution_name, 'class_name': group_name}
+    relation_options = sociogram_utils.get_relation_options(institution_name, group_name, app_data)
+    layout = create_layout_diana(institution_name, group_name, relation_options)
+    window = sg.Window("Análisis Gráfico en Diana", layout, finalize=True, resizable=True)
+    window.maximize()
+    
+    original_image_bytes = None
+    all_defs = app_data.get_class_question_definitions(institution_name, group_name)
+
+    def update_diana_image(zoom_level=100):
+        if not original_image_bytes: return
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(original_image_bytes))
+            container_size = window['-DIANA_IMAGE_CONTAINER-'].get_size()
+            widget_width, widget_height = container_size[0] - 20, container_size[1] - 20
+            if widget_width <= 0 or widget_height <= 0: return
+            img_width, img_height = img.size
+            scale = min(widget_width / img_width, widget_height / img_height) if img_width > 0 and img_height > 0 else 1
+            final_scale = scale * (zoom_level / 100.0)
+            new_size = (int(img_width * final_scale), int(img_height * final_scale))
+            if new_size[0] < 10 or new_size[1] < 10: return
+            img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+            with io.BytesIO() as bio:
+                img_resized.save(bio, format="PNG")
+                img_bytes_for_gui = bio.getvalue()
+            window['-DIANA_IMAGE-'].update(data=img_bytes_for_gui)
+            window['-DIANA_ZOOM_TEXT-'].update(f"{int(zoom_level)}%")
+        except Exception as e:
+            log_message(f"Error al aplicar zoom: {e}", "error")
+
+    q_widgets_info = { f"-DIANA_Q__{opt['data_key']}__": {'polarity': opt['polarity']} for opt in relation_options }
+    action, data = 'open_groups', institution_name
+
+    aggregation_map = {
+        "Diana de Afinidad (Popularidad)": "affinity",
+        "Diana de Distancia (CIVSOC)": "civsoc_distance",
+        "Diana de Precisión (Global)": "accuracy_diana",
+        "Red de Meta-Percepción (SELF)": "meta_perceptions",
+    }
+
+    while True:
+        event, values = window.read()
+        
+        if event in (sg.WIN_CLOSED, '-BACK_TO_GROUPS-'): break
+        if event == sg.WIN_CLOSED: action = 'exit'; break
+
+        if event == '-DIANA_AGGREGATION_MODE-':
+            mode_text = values[event]
+            is_focus_needed = mode_text == "Diana de Distancia (CIVSOC)"
+            window['-DIANA_PERCEIVER-'].update(disabled=not is_focus_needed)
+            is_affinity_mode = mode_text in ["Diana de Afinidad (Popularidad)", "Red de Meta-Percepción (SELF)"]
+            window['-DIANA_SHOW_LINES-'].update(value=is_affinity_mode, disabled=not is_affinity_mode)
+
         if event in ('-DIANA_ALL-', '-DIANA_NONE-', '-DIANA_POS-', '-DIANA_NEG-'):
             for key, info in q_widgets_info.items():
                 if key in window.key_dict:
@@ -1589,48 +1323,98 @@ def window_diana(institution_name, group_name):
                     elif event == '-DIANA_NEG-': window[key].update(info['polarity'] == 'negative')
         
         elif event == '-DIANA_GENERATE-':
-            selected_keys = [key.split('__')[1] for key, val in values.items() if isinstance(key, str) and key.startswith('-DIANA_Q__') and val]
-            if not selected_keys:
-                sg.popup_error("Selecciona al menos una pregunta."); continue
+            sg.popup_quick_message("Generando Gráfico...", background_color='lightblue')
             
-            sg.popup_quick_message("Generando Diana...", background_color='lightblue')
-            image_bytes = hgrp.handle_generate_diana_data(institution_name, group_name, selected_keys, values['-DIANA_SHOW_LINES-'])
+            aggregation_mode_key = aggregation_map.get(values['-DIANA_AGGREGATION_MODE-'], 'affinity')
+            selected_keys = [key.split('__')[1] for key, val in values.items() if key.startswith('-DIANA_Q__') and val]
+            image_buffer = None
             
-            if image_bytes:
-                original_image_bytes = image_bytes
-                window['-DIANA_SAVE-'].update(disabled=False)
-                # --- CORRECCIÓN: Llamar a la función de zoom para el dibujado inicial ---
-                update_diana_image(values['-DIANA_ZOOM_SLIDER-'])
+            if aggregation_mode_key == 'civsoc_distance':
+                focus_member_name = values['-DIANA_PERCEIVER-']
+                if not focus_member_name or focus_member_name == "Todos (Grafo Completo)":
+                    sg.popup_error("Por favor, selecciona un 'Miembro Foco' para este análisis.")
+                    continue
+                
+                selected_defs = [d for d in all_defs.values() if d.get('data_key') in selected_keys]
+                counts = {'ap': sum(1 for d in selected_defs if d.get('type')=='[Acción Real]' and d.get('polarity')=='positive'), 'an': sum(1 for d in selected_defs if d.get('type')=='[Acción Real]' and d.get('polarity')=='negative'), 'mp': sum(1 for d in selected_defs if d.get('type')=='[Meta-Percepción]' and d.get('polarity')=='positive'), 'mn': sum(1 for d in selected_defs if d.get('type')=='[Meta-Percepción]' and d.get('polarity')=='negative')}
+                if len(selected_defs) != 4 or not all(c == 1 for c in counts.values()):
+                    sg.popup_error("Error de Selección para Distancia CIVSOC:\n\nDebe seleccionar exactamente 4 preguntas: una para cada combinación de Acción/Meta y Positiva/Negativa.")
+                    continue
+                
+                q_keys = {k: next(d['data_key'] for d in selected_defs if d.get('type')==t and d.get('polarity')==p) for k,t,p in [('accion_pos','[Acción Real]','positive'), ('accion_neg','[Acción Real]','negative'), ('meta_pos','[Meta-Percepción]','positive'), ('meta_neg','[Meta-Percepción]','negative')]}
+                members_data_list = hgrp.calculate_civsoc_distance_data(institution_name, group_name, focus_member_name, q_keys)
+                
+                if members_data_list:
+                    image_buffer = pdf_generator.generate_distance_diana_image(
+                        title_text=f"Distancias Sociométricas respecto a {focus_member_name}\n({group_name})",
+                        members_data_list=members_data_list, score_key='distancia_sociometrica',
+                        score_range=(-4, 4), ring_labels={-4:"-4", -3:"-3", -2:"-2", -1:"-1", 0:"Foco", 1:"+1", 2:"+2", 3:"+3", 4:"+4"}
+                    )
+
+            elif aggregation_mode_key == 'accuracy_diana':
+                selected_defs = [d for d in all_defs.values() if d.get('data_key') in selected_keys]
+                action_q = next((d for d in selected_defs if d.get('type') == '[Acción Real]'), None); meta_q = next((d for d in selected_defs if d.get('type') == '[Meta-Percepción]'), None)
+                if len(selected_defs) != 2 or not action_q or not meta_q or action_q.get('polarity') != meta_q.get('polarity'):
+                    sg.popup_error("Error de Selección para Diana de Precisión:\n\nDebe seleccionar 2 preguntas (1 de Acción Real y 1 de Meta-Percepción) de la misma polaridad.")
+                    continue
+                
+                matrix_data, members, _ = hgrp.calculate_accuracy_matrix(institution_name, group_name, action_q['data_key'], meta_q['data_key'])
+                members_data_list = []
+                for i, member in enumerate(members):
+                    counts = collections.Counter(matrix_data[i]); num_aciertos = counts.get(1, 0); num_errores = counts.get(2, 0); num_omisiones = counts.get(3, 0)
+                    category = "Indiferencia";
+                    if num_aciertos > num_errores + num_omisiones: category = "Aciertos"
+                    elif num_errores + num_omisiones > num_aciertos: category = "Errores/Omisiones"
+                    members_data_list.append({'nombre_completo': f"{member.get('nome','').title()} {member.get('cognome','').title()}", 'id_corto': member.get('iniz', 'N/A'), 'sexo': member.get('sexo'), 'accuracy_category': category})
+                
+                if members_data_list:
+                    ring_labels_categorical = {"Aciertos": "Aciertos", "Indiferencia": "Indiferencia Correcta", "Errores/Omisiones": "Errores / Omisiones"}
+                    image_buffer = pdf_generator.generate_distance_diana_image(
+                        title_text=f"Precisión Perceptual Global\n({group_name})",
+                        members_data_list=members_data_list, score_key='accuracy_category', score_range=(0, 0), ring_labels=ring_labels_categorical
+                    )
+            
+            else: # Modos de Afinidad y Meta-Percepción
+                if aggregation_mode_key == 'affinity': aggregation_mode_key = 'real_actions'
+                if not selected_keys: sg.popup_error("Por favor, selecciona al menos una pregunta para el análisis."); continue
+                
+                network_data = hutils.get_aggregated_network(institution_name, group_name, aggregation_mode_key, app_data, None, selected_keys)
+                members_data, edges_data = hgrp.handle_generate_diana_data(institution_name, group_name, selected_keys, network_data_override=network_data)
+                
+                if members_data:
+                    # ESTA ES LA LLAMADA CORREGIDA
+                    image_buffer = pdf_generator.generate_affinity_diana_image(
+                        title_text=f"{values['-DIANA_AGGREGATION_MODE-']}\n({group_name})",
+                        members_data_list=members_data,
+                        edges_data=edges_data,
+                        show_lines=values['-DIANA_SHOW_LINES-']
+                    )
+            
+            if image_buffer:
+                original_image_bytes = image_buffer; window['-DIANA_SAVE-'].update(disabled=False); update_diana_image(values['-DIANA_ZOOM_SLIDER-'])
             else:
-                sg.popup_error("No se pudo generar la imagen.")
-                original_image_bytes = None
-                window['-DIANA_IMAGE-'].update(data=None)
-                window['-DIANA_SAVE-'].update(disabled=True)
+                sg.popup_error("No se pudo generar la imagen. Verifica la selección de preguntas o si hay datos disponibles.")
+                original_image_bytes = None; window['-DIANA_IMAGE-'].update(data=None); window['-DIANA_SAVE-'].update(disabled=True)
         
-        # --- INICIO DE LA CORRECCIÓN ---
-        # Añadir el manejador de eventos para el slider
         elif event == '-DIANA_ZOOM_SLIDER-':
-            if original_image_bytes:
-                update_diana_image(values['-DIANA_ZOOM_SLIDER-'])
-        # --- FIN DE LA CORRECCIÓN ---
+            if original_image_bytes: update_diana_image(values['-DIANA_ZOOM_SLIDER-'])
         
         elif event == '-DIANA_SAVE-':
             if original_image_bytes:
-                filename = f"Diana_{institution_name}_{group_name}.png".replace('\"','').replace("'", "")
-                save_path = sg.popup_get_file('Guardar Diana (PNG)', save_as=True, default_extension=".png", file_types=(("PNG", "*.png"),), default_path=filename)
+                mode_name = values['-DIANA_AGGREGATION_MODE-'].split('(')[0].strip().replace(' ', '_')
+                filename = f"Diana_{mode_name}_{group_name.replace(' ', '_')}.png"
+                save_path = sg.popup_get_file('Guardar Gráfico', save_as=True, default_extension=".png", file_types=(("PNG", "*.png"),), default_path=filename)
                 if save_path:
                     try:
                         with open(save_path, 'wb') as f: f.write(original_image_bytes)
-                        sg.popup("Diana guardada.")
+                        sg.popup("Gráfico guardado.")
                     except Exception as e: sg.popup_error(f"Error al guardar: {e}")
-            else:
-                sg.popup_error("Primero genera una diana.")
+            else: sg.popup_error("Primero genera un gráfico.")
             
     window.close()
-    return action, None
+    return action, data
 
-# --- FIN BLOQUE 4.5 ---
-
+# --- BLOQUE 8 DE 10: CLASE PRINCIPAL Y ARQUITECTURA ---
 # =============================================================================
 #  BLOQUE 5: CLASE PRINCIPAL (ARQUITECTURA DE VENTANA ÚNICA - VERSIÓN ESTABLE)
 # =============================================================================
@@ -1639,38 +1423,25 @@ class SociogramaApp:
     def __init__(self):
         """Inicializa la aplicación, los datos y la ventana principal."""
         self.app_state = {}
-        # Lista de claves para todas las vistas que gestionaremos.
         self.view_keys = [
             '-VIEW_INSTITUTIONS-', '-VIEW_GROUPS-', '-VIEW_MEMBERS-',
-            '-VIEW_QUESTIONNAIRE-', '-VIEW_QUESTIONS-', '-VIEW_SOCIOGRAM-',
-            '-VIEW_MATRIX-', '-VIEW_DIANA-'
+            '-VIEW_QUESTIONS-',
         ]
         
-        # --- CAMBIO CLAVE: Crear y ocultar la ventana raíz de Tkinter ---
-        # Esta ventana invisible servirá como "parent" para todos los diálogos de Tkinter.
         self.tk_root = tk.Tk()
         self.tk_root.withdraw()
-        # --- FIN DEL CAMBIO ---
 
         self.window = self._create_main_window()
 
     def _create_main_window(self):
         """
-        Crea la ventana principal SIN las vistas de análisis complejas, que
-        ahora se lanzan como ventanas independientes.
+        Crea la ventana principal con todas las vistas (Columnas) pre-cargadas y ocultas.
         """
-        # Eliminar las claves de todas las vistas que ahora son ventanas separadas
-        keys_to_remove = ['-VIEW_QUESTIONNAIRE-', '-VIEW_SOCIOGRAM-', '-VIEW_MATRIX-', '-VIEW_DIANA-']
-        for key in keys_to_remove:
-            if key in self.view_keys:
-                self.view_keys.remove(key)
-
         layout = [
             [
                 sg.Column(create_layout_institutions(), key='-VIEW_INSTITUTIONS-', visible=True, expand_x=True, expand_y=True),
                 sg.Column(create_layout_groups("..."), key='-VIEW_GROUPS-', visible=False, expand_x=True, expand_y=True),
                 sg.Column(create_layout_members("...", "..."), key='-VIEW_MEMBERS-', visible=False, expand_x=True, expand_y=True),
-                # Todas las vistas de análisis complejas han sido eliminadas de aquí
                 sg.Column(create_layout_question_management("...", "..."), key='-VIEW_QUESTIONS-', visible=False, expand_x=True, expand_y=True),
             ]
         ]
@@ -1678,60 +1449,26 @@ class SociogramaApp:
 
     def switch_view(self, view_key_to_show, context_data=None):
         """
-        VERSIÓN CORREGIDA: Gestiona el cambio de vistas de forma segura,
-        reconstruyendo los layouts solo cuando es estrictamente necesario.
+        Gestiona el cambio entre las vistas principales (Columnas).
         """
         self.app_state['context'] = context_data
                 
-        # 1. Oculta todas las vistas
         for key in self.view_keys:
             self.window[key].update(visible=False)
                 
-        # 2. Muestra solo la vista de destino
         self.window[view_key_to_show].update(visible=True)
 
-        # 3. Decide si refrescar datos o reconstruir el layout completo
-        if view_key_to_show in ['-VIEW_INSTITUTIONS-', '-VIEW_GROUPS-', '-VIEW_MEMBERS-', '-VIEW_QUESTIONNAIRE-', '-VIEW_QUESTIONS-']:
-            # Para estas vistas, solo necesitamos refrescar el contenido de los widgets existentes
-            if view_key_to_show == '-VIEW_INSTITUTIONS-':
-                self.refresh_institutions_list()
-            elif view_key_to_show == '-VIEW_GROUPS-':
-                self.refresh_groups_list(context_data)
-            elif view_key_to_show == '-VIEW_MEMBERS-':
-                self.refresh_members_list(context_data['school'], context_data['class_name'])
-            elif view_key_to_show == '-VIEW_QUESTIONNAIRE-':
-                self.refresh_questionnaire_view(context_data['school'], context_data['class_name'], context_data['member'])
-            elif view_key_to_show == '-VIEW_QUESTIONS-':
-                self.refresh_questions_list(context_data['school'], context_data['class_name'])
-
-        elif view_key_to_show in ['-VIEW_SOCIOGRAM-', '-VIEW_MATRIX-', '-VIEW_DIANA-']:
-            # Para las vistas de análisis, SÍ necesitamos reconstruir su layout dinámico
-            institution_name = context_data['school']
-            group_name = context_data['class_name']
-            target_column = self.window[view_key_to_show]
-
-            # Limpiar el contenido viejo para evitar duplicados
-            for child in target_column.Widget.winfo_children():
-                child.destroy()
-
-            # Crear el nuevo layout basado en el nuevo contexto
-            new_layout = [[]] # Valor por defecto
-            if view_key_to_show == '-VIEW_SOCIOGRAM-':
-                self.app_state['current_group_viewing_members'] = context_data
-                participant_options = sociogram_utils.get_participant_options(self.app_state, app_data, hutils)
-                relation_options = sociogram_utils.get_relation_options(self.app_state, app_data)
-                new_layout = create_layout_sociogram(institution_name, group_name, relation_options, participant_options)
-                
-            elif view_key_to_show == '-VIEW_MATRIX-':
-                new_layout = create_layout_sociomatrix(institution_name, group_name)
-                
-            elif view_key_to_show == '-VIEW_DIANA-':
-                self.app_state['current_group_viewing_members'] = context_data
-                relation_options = sociogram_utils.get_relation_options(self.app_state, app_data)
-                new_layout = create_layout_diana(institution_name, group_name, relation_options)
-
-            # Añadir el nuevo layout. Esta línea ahora está DENTRO del bloque correcto.
-            self.window.extend_layout(target_column, new_layout)
+        # Refresca el contenido de la vista que se va a mostrar
+        if view_key_to_show == '-VIEW_INSTITUTIONS-':
+            self.refresh_institutions_list()
+        elif view_key_to_show == '-VIEW_GROUPS-':
+            self.refresh_groups_list(context_data)
+        elif view_key_to_show == '-VIEW_MEMBERS-':
+            self.refresh_members_list(context_data['school'], context_data['class_name'])
+        elif view_key_to_show == '-VIEW_QUESTIONNAIRE-': # Aunque es una ventana aparte, refrescamos por si acaso
+            self.refresh_questionnaire_view(context_data['school'], context_data['class_name'], context_data['member'])
+        elif view_key_to_show == '-VIEW_QUESTIONS-':
+            self.refresh_questions_list(context_data['school'], context_data['class_name'])
 
     def run(self):
         """El bucle de eventos principal."""
@@ -1743,7 +1480,6 @@ class SociogramaApp:
             if event == sg.WIN_CLOSED or event == '-EXIT-':
                 break
 
-            # Despachador de eventos simple basado en qué vista está activa
             active_view = next((key for key in self.view_keys if self.window[key].visible), None)
             
             if active_view == '-VIEW_INSTITUTIONS-':
@@ -1752,21 +1488,15 @@ class SociogramaApp:
                 self.handle_groups_events(event, values)
             elif active_view == '-VIEW_MEMBERS-':
                 self.handle_members_events(event, values)
-            elif active_view == '-VIEW_QUESTIONNAIRE-':
-                self.handle_questionnaire_events(event, values)
+            # El caso para '-VIEW_QUESTIONNAIRE-' se maneja en su propia ventana.
             elif active_view == '-VIEW_QUESTIONS-':
                 self.handle_questions_events(event, values)
-            elif active_view == '-VIEW_SOCIOGRAM-':
-                self.handle_sociogram_events(event, values)
-            elif active_view == '-VIEW_MATRIX-':
-                self.handle_matrix_events(event, values)
-            elif active_view == '-VIEW_DIANA-':
-                self.handle_diana_events(event, values)
             
         self.window.close()
 
-    # --- Métodos de Refresco (Ajustados para la nueva arquitectura) ---
+# --- BLOQUE 9 DE 10: MÉTODOS DE REFRESCO Y MANEJADORES DE EVENTOS PRINCIPALES ---
 
+    # --- Métodos de Refresco ---
     def refresh_institutions_list(self):
         institutions = sorted(list(app_data.schools_data.keys()))
         self.window['-INST_SELECT-'].update(values=institutions, set_to_index=[])
@@ -1776,28 +1506,19 @@ class SociogramaApp:
         self.window['-NAV_TO_GROUPS-'].update(disabled=True)
 
     def refresh_groups_list(self, institution_name):
-        # Actualiza el título de la vista. Esto se hace accediendo al widget de Tkinter subyacente.
-        # Esta es una forma segura de cambiar texto estático creado al inicio.
         self.window['-GROUPS_TITLE-'].update(f"Grupos de: {institution_name}")
-        
         groups = sorted([g['name'] for g in app_data.classes_data.get(institution_name, [])])
         self.window['-GROUP_SELECT-'].update(values=groups, set_to_index=[])
-
-        buttons_to_disable = ['-MOD_GROUP-', '-DEL_GROUP-', '-NAV_TO_MEMBERS-', '-NAV_TO_SOCIOGRAM-', '-NAV_TO_MATRIX-', '-NAV_TO_DIANA-', '-PDF_SUMMARY-']
-        for key in buttons_to_disable:
+        for key in ['-MOD_GROUP-', '-DEL_GROUP-', '-NAV_TO_MEMBERS-', '-NAV_TO_SOCIOGRAM-', '-NAV_TO_MATRIX-', '-NAV_TO_DIANA-', '-PDF_SUMMARY-']:
             if key in self.window.key_dict: self.window[key].update(disabled=True)
-        
-        text_fields_to_clear = ['-GROUP_COORD-', '-GROUP_INS2-', '-GROUP_INS3-', '-GROUP_SOST-', '-GROUP_ANNOT-']
-        for key in text_fields_to_clear:
+        for key in ['-GROUP_COORD-', '-GROUP_INS2-', '-GROUP_INS3-', '-GROUP_SOST-', '-GROUP_ANNOT-']:
             if key in self.window.key_dict: self.window[key].update('')
 
     def refresh_members_list(self, institution_name, group_name):
         self.window['-MEMBERS_TITLE-'].update(f"Miembros de: {group_name} ({institution_name})")
-        
         members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
         member_names = hutils.generar_opciones_dropdown_miembros_main_select(members_list)
         self.window['-MEMBER_SELECT-'].update(values=member_names, set_to_index=[])
-        
         for key in ['-MOD_MEMBER-', '-DEL_MEMBER-', '-NAV_TO_QUESTIONNAIRE-']:
             if key in self.window.key_dict: self.window[key].update(disabled=True)
         for key in ['-MEMBER_COGNOME-', '-MEMBER_NOME-', '-MEMBER_INIZ-', '-MEMBER_ANNOT-']:
@@ -1810,58 +1531,9 @@ class SociogramaApp:
         self.window['-MOD_Q-'].update(disabled=True)
         self.window['-DEL_Q-'].update(disabled=True)
 
-    def refresh_questionnaire_view(self, institution_name, group_name, member_name):
-        """
-        SOLUCIÓN DEFINITIVA: Actualiza los elementos de la estructura fija
-        del cuestionario en lugar de intentar reconstruir layouts complejos.
-        """
-        # 1. Obtener los datos más recientes del cuestionario
-        q_data = hquest.get_questionnaire_data_for_member(institution_name, group_name, member_name, app_data_ref=app_data)
-        
-        # 2. Actualizar los textos del título y subtítulo
-        self.window['-QUESTIONNAIRE_TITLE-'].update(f"Cuestionario para: {member_name}")
-        self.window['-QUESTIONNAIRE_SUBTITLE-'].update(f"Institución: {institution_name} | Grupo: {group_name}")
-        
-        # 3. Obtener la referencia al contenedor de contenido
-        content_container = self.window['-QUESTIONNAIRE_CONTENT-']
-        
-        # 4. Limpiar de forma segura el contenido anterior
-        for child in content_container.Widget.winfo_children():
-            child.destroy()
-        
-        # 5. Construir las nuevas filas de preguntas
-        new_content_rows = []
-        if q_data['success'] and q_data['questions']:
-            for q in q_data['questions']:
-                options = [opt[0] for opt in q['options'] if opt[1] not in [None, '']]
-                selections = q_data['saved_responses'].get(q['data_key'], [])
-                
-                frame_layout = []
-                for i in range(q['max_selections']):
-                    default_val = selections[i] if i < len(selections) else 'Seleccionar'
-                    frame_layout.append([
-                        sg.Text(f"Elección {i+1}:", size=(10, 1)),
-                        sg.Combo(['Seleccionar'] + options, default_value=default_val,
-                                key=f"-Q_{q['data_key']}_{i}-", readonly=True, expand_x=True)
-                    ])
-                
-                new_content_rows.append([sg.Frame(q['text'], frame_layout, expand_x=True)])
-        
-        # 6. Añadir las nuevas filas al contenedor
-        if new_content_rows:
-            self.window.extend_layout(content_container, new_content_rows)
-        
-        # 7. Habilitar los botones del pie de página
-        for key in ['-SAVE_Q-', '-PDF_TEMPLATE_Q-', '-MANAGE_Q-', '-BACK_TO_MEMBERS-']:
-            self.window[key].update(disabled=False)
-        
-        # 8. Refrescar la ventana para que los cambios se muestren
-        self.window.refresh()
-
+    # --- Manejadores de Eventos ---
     def handle_institutions_events(self, event, values):
-        """Maneja todos los eventos de la pantalla de Instituciones."""
         selected_inst = values.get('-INST_SELECT-')[0] if values.get('-INST_SELECT-') else None
-        
         form_is_visible = self.window['-FORM_INST_FRAME-'].visible
         self.window['-NEW_INST-'].update(disabled=form_is_visible)
         self.window['-MOD_INST-'].update(disabled=form_is_visible or not selected_inst)
@@ -1893,7 +1565,6 @@ class SociogramaApp:
                 success, msg = hinst.handle_add_institution(form_name, form_annot)
             else:
                 success, msg = hinst.handle_modify_institution(self.app_state.get('original_inst_name'), form_name, form_annot)
-            
             sg.popup(msg)
             if success:
                 self.window['-FORM_INST_FRAME-'].update(visible=False)
@@ -1901,97 +1572,105 @@ class SociogramaApp:
         elif event == '-FORM_INST_CANCEL-':
             self.window['-FORM_INST_FRAME-'].update(visible=False)
         elif event == '-DEL_INST-' and selected_inst:
-            if sg.popup_yes_no(f"¿Eliminar '{selected_inst}' y TODOS sus datos asociados (grupos, miembros, etc.)?", title="Confirmar Eliminación") == 'Yes':
+            if sg.popup_yes_no(f"¿Eliminar '{selected_inst}' y TODOS sus datos asociados?", title="Confirmar Eliminación") == 'Yes':
                 success, msg = hinst.handle_delete_institution(selected_inst)
                 sg.popup(msg)
                 if success:
                     self.refresh_institutions_list()
         elif event == '-MANAGE_CSV-':
-            # --- CAMBIO CLAVE: Pasamos self.tk_root como segundo argumento ---
             if window_csv_management({'school': selected_inst, 'group': None}, self.tk_root):
                 log_message("Datos importados, refrescando instituciones.")
                 self.refresh_institutions_list()
 
     def handle_groups_events(self, event, values):
-        """
-        Maneja los eventos de Grupos, asegurando que la ventana principal
-        se re-maximice al volver de CUALQUIER ventana de análisis secundaria.
-        """
         institution_name = self.app_state.get('context')
         selected_group = values.get('-GROUP_SELECT-')[0] if values.get('-GROUP_SELECT-') else None
-        
-        # Habilitar/deshabilitar botones (sin cambios)
         form_is_visible = self.window['-FORM_GROUP_FRAME-'].visible
+        
+        # Lógica de habilitación/deshabilitación de botones que se ejecuta en cada evento
+        is_group_selected = not form_is_visible and selected_group is not None
         self.window['-NEW_GROUP-'].update(disabled=form_is_visible)
-        self.window['-MOD_GROUP-'].update(disabled=form_is_visible or not selected_group)
-        self.window['-DEL_GROUP-'].update(disabled=form_is_visible or not selected_group)
-        self.window['-NAV_TO_MEMBERS-'].update(disabled=form_is_visible or not selected_group)
-        self.window['-NAV_TO_SOCIOGRAM-'].update(disabled=form_is_visible or not selected_group)
-        self.window['-NAV_TO_MATRIX-'].update(disabled=form_is_visible or not selected_group)
-        self.window['-NAV_TO_DIANA-'].update(disabled=form_is_visible or not selected_group)
+        self.window['-MOD_GROUP-'].update(disabled=not is_group_selected)
+        self.window['-DEL_GROUP-'].update(disabled=not is_group_selected)
+        self.window['-NAV_TO_MEMBERS-'].update(disabled=not is_group_selected)
+        self.window['-NAV_TO_SOCIOGRAM-'].update(disabled=not is_group_selected)
+        self.window['-NAV_TO_MATRIX-'].update(disabled=not is_group_selected)
+        self.window['-NAV_TO_DIANA-'].update(disabled=not is_group_selected)
+        self.window['-PDF_SUMMARY-'].update(disabled=not is_group_selected)
 
+        # Manejo de eventos específicos
         if event == '-BACK_TO_INST-':
             self.switch_view('-VIEW_INSTITUTIONS-')
-
-        # CASOS ESPECIALES: Ventanas independientes para análisis
+            
         elif event == '-NAV_TO_SOCIOGRAM-' and selected_group:
             self.window.hide()
             action_result, _ = window_sociogram(institution_name, selected_group)
             self.window.un_hide()
-            self.window.maximize() # Re-maximizar
+            self.window.maximize()
             if action_result == 'exit': self.window.write_event_value('-EXIT-', None)
 
         elif event == '-NAV_TO_MATRIX-' and selected_group:
             self.window.hide()
             action_result, _ = window_sociomatrix(institution_name, selected_group)
             self.window.un_hide()
-            self.window.maximize() # Re-maximizar
+            self.window.maximize()
             if action_result == 'exit': self.window.write_event_value('-EXIT-', None)
 
         elif event == '-NAV_TO_DIANA-' and selected_group:
             self.window.hide()
             action_result, _ = window_diana(institution_name, selected_group)
             self.window.un_hide()
-            self.window.maximize() # <-- CORRECCIÓN AÑADIDA AQUÍ
+            self.window.maximize()
             if action_result == 'exit': self.window.write_event_value('-EXIT-', None)
 
-        # CASOS NORMALES: Vistas dentro de la ventana principal
         elif event == '-NAV_TO_MEMBERS-' and selected_group:
             context = {'school': institution_name, 'class_name': selected_group}
             self.switch_view('-VIEW_MEMBERS-', context_data=context)
-        
-        # El resto de la lógica de la función no necesita cambios...
+            
         elif event == '-GROUP_SELECT-':
             is_valid = selected_group is not None
-            buttons_to_update = ['-MOD_GROUP-', '-DEL_GROUP-', '-NAV_TO_MEMBERS-', '-NAV_TO_SOCIOGRAM-', '-NAV_TO_MATRIX-', '-NAV_TO_DIANA-', '-PDF_SUMMARY-']
-            for key in buttons_to_update: self.window[key].update(disabled=not is_valid)
             group_info = next((g for g in app_data.classes_data.get(institution_name, []) if g['name'] == selected_group), {}) if is_valid else {}
-            self.window['-GROUP_COORD-'].update(group_info.get('coordinator', '')); self.window['-GROUP_INS2-'].update(group_info.get('ins2', '')); self.window['-GROUP_INS3-'].update(group_info.get('ins3', '')); self.window['-GROUP_SOST-'].update(group_info.get('sostegno', '')); self.window['-GROUP_ANNOT-'].update(group_info.get('annotations', ''))
+            self.window['-GROUP_COORD-'].update(group_info.get('coordinator', ''))
+            self.window['-GROUP_INS2-'].update(group_info.get('ins2', ''))
+            self.window['-GROUP_INS3-'].update(group_info.get('ins3', ''))
+            self.window['-GROUP_SOST-'].update(group_info.get('sostegno', ''))
+            self.window['-GROUP_ANNOT-'].update(group_info.get('annotations', ''))
             self.window['-FORM_GROUP_FRAME-'].update(visible=False)
+
         elif event == '-NEW_GROUP-':
             self.app_state['form_group_mode'] = 'new'
             self.window['-FORM_GROUP_TITLE-'].update("Nuevo Grupo")
             for key in ['-FORM_GROUP_NAME-', '-FORM_GROUP_COORD-', '-FORM_GROUP_INS2-', '-FORM_GROUP_INS3-', '-FORM_GROUP_SOST-', '-FORM_GROUP_ANNOT-']: self.window[key].update('')
             self.window['-FORM_GROUP_FRAME-'].update(visible=True)
+            
         elif event == '-MOD_GROUP-' and selected_group:
             self.app_state['form_group_mode'] = 'modify'; self.app_state['original_group_name'] = selected_group
             group_info = next((g for g in app_data.classes_data.get(institution_name, []) if g['name'] == selected_group), {})
             self.window['-FORM_GROUP_TITLE-'].update(f"Modificar: {selected_group}")
-            self.window['-FORM_GROUP_NAME-'].update(group_info.get('name', '')); self.window['-FORM_GROUP_COORD-'].update(group_info.get('coordinator', '')); self.window['-FORM_GROUP_INS2-'].update(group_info.get('ins2', '')); self.window['-FORM_GROUP_INS3-'].update(group_info.get('ins3', '')); self.window['-FORM_GROUP_SOST-'].update(group_info.get('sostegno', '')); self.window['-FORM_GROUP_ANNOT-'].update(group_info.get('annotations', ''))
+            self.window['-FORM_GROUP_NAME-'].update(group_info.get('name', ''))
+            self.window['-FORM_GROUP_COORD-'].update(group_info.get('coordinator', ''))
+            self.window['-FORM_GROUP_INS2-'].update(group_info.get('ins2', ''))
+            self.window['-FORM_GROUP_INS3-'].update(group_info.get('ins3', ''))
+            self.window['-FORM_GROUP_SOST-'].update(group_info.get('sostegno', ''))
+            self.window['-FORM_GROUP_ANNOT-'].update(group_info.get('annotations', ''))
             self.window['-FORM_GROUP_FRAME-'].update(visible=True)
+            
         elif event == '-FORM_GROUP_SAVE-':
             group_details = {'name': values['-FORM_GROUP_NAME-'], 'coordinator': values['-FORM_GROUP_COORD-'], 'ins2': values['-FORM_GROUP_INS2-'], 'ins3': values['-FORM_GROUP_INS3-'], 'sostegno': values['-FORM_GROUP_SOST-'], 'annotations': values['-FORM_GROUP_ANNOT-']}
             if self.app_state.get('form_group_mode') == 'new': success, msg = hgrp.handle_add_group(institution_name, group_details)
             else: success, msg = hgrp.handle_modify_group(institution_name, self.app_state.get('original_group_name'), group_details)
             sg.popup(msg)
             if success: self.window['-FORM_GROUP_FRAME-'].update(visible=False); self.refresh_groups_list(institution_name)
+            
         elif event == '-FORM_GROUP_CANCEL-':
             self.window['-FORM_GROUP_FRAME-'].update(visible=False)
+            
         elif event == '-DEL_GROUP-' and selected_group:
-            if sg.popup_yes_no(f"¿Eliminar grupo '{selected_group}'?", title="Confirmar") == 'Yes':
+            if sg.popup_yes_no(f"¿Eliminar grupo '{selected_group}' y todos sus datos asociados?", title="Confirmar") == 'Yes':
                 success, msg = hgrp.handle_delete_group(institution_name, selected_group)
                 sg.popup(msg)
                 if success: self.refresh_groups_list(institution_name)
+                
         elif event == '-PDF_SUMMARY-' and selected_group:
             pdf_bytes, filename = pdf_generator.generate_class_summary_report_pdf(institution_name, selected_group)
             if pdf_bytes:
@@ -2004,45 +1683,35 @@ class SociogramaApp:
             else: sg.popup_error("No se pudo generar el PDF Resumen.")
 
     def handle_members_events(self, event, values):
-        """
-        Maneja los eventos de Miembros, asegurando que la ventana principal
-        se re-maximice al volver del Cuestionario.
-        """
         context = self.app_state.get('context', {})
         institution_name = context.get('school')
         group_name = context.get('class_name')
         selected_name = values.get('-MEMBER_SELECT-')[0] if values.get('-MEMBER_SELECT-') else None
 
-        # Lógica de habilitación de botones (sin cambios)
         form_is_visible = self.window['-FORM_MEMBER_FRAME-'].visible
+        is_member_selected = not form_is_visible and selected_name is not None
         self.window['-NEW_MEMBER-'].update(disabled=form_is_visible)
-        self.window['-MOD_MEMBER-'].update(disabled=form_is_visible or not selected_name)
-        self.window['-DEL_MEMBER-'].update(disabled=form_is_visible or not selected_name)
-        self.window['-NAV_TO_QUESTIONNAIRE-'].update(disabled=form_is_visible or not selected_name)
+        self.window['-MOD_MEMBER-'].update(disabled=not is_member_selected)
+        self.window['-DEL_MEMBER-'].update(disabled=not is_member_selected)
+        self.window['-NAV_TO_QUESTIONNAIRE-'].update(disabled=not is_member_selected)
 
-        # Lógica de eventos
         if event == '-BACK_TO_GROUPS-':
             self.switch_view('-VIEW_GROUPS-', context_data=institution_name)
-
         elif event == '-NAV_TO_QUESTIONNAIRE-' and selected_name:
             self.window.hide()
-            action, data = window_questionnaire(institution_name, group_name, selected_name)
+            window_questionnaire(institution_name, group_name, selected_name)
             self.window.un_hide()
-            self.window.maximize() # <-- CORRECCIÓN AÑADIDA
-            if action == 'exit':
-                self.window.write_event_value('-EXIT-', None)
-            elif action == 'open_questionnaire':
-                # Simular un nuevo clic para recargar el cuestionario si es necesario
-                self.window.write_event_value('-NAV_TO_QUESTIONNAIRE-', selected_name)
-
-        # El resto de los eventos de esta función no cambian
+            self.window.maximize()
         elif event == '-MEMBER_SELECT-':
             self.window['-FORM_MEMBER_FRAME-'].update(visible=False)
             member_details = {}
             if selected_name:
                 members_list = app_data.members_data.get(institution_name, {}).get(group_name, [])
                 member_details = next((m for m in members_list if f"{m.get('nome','').title()} {m.get('cognome','').title()}" == selected_name), {})
-            self.window['-MEMBER_COGNOME-'].update(member_details.get('cognome', '')); self.window['-MEMBER_NOME-'].update(member_details.get('nome', '')); self.window['-MEMBER_INIZ-'].update(member_details.get('iniz', '')); self.window['-MEMBER_ANNOT-'].update(member_details.get('annotations', ''))
+            self.window['-MEMBER_COGNOME-'].update(member_details.get('cognome', ''))
+            self.window['-MEMBER_NOME-'].update(member_details.get('nome', ''))
+            self.window['-MEMBER_INIZ-'].update(member_details.get('iniz', ''))
+            self.window['-MEMBER_ANNOT-'].update(member_details.get('annotations', ''))
         elif event == '-NEW_MEMBER-':
             self.app_state['form_member_mode'] = 'new'
             self.window['-FORM_MEMBER_TITLE-'].update("Nuevo Miembro")
@@ -2055,9 +1724,14 @@ class SociogramaApp:
             d = next((m for m in members_list if f"{m.get('nome','').title()} {m.get('cognome','').title()}" == selected_name), {})
             self.app_state['original_member_data'] = d
             self.window['-FORM_MEMBER_TITLE-'].update(f"Modificar: {selected_name}")
-            self.window['-FORM_MEMBER_COGNOME-'].update(d.get('cognome', '').title()); self.window['-FORM_MEMBER_NOME-'].update(d.get('nome', '').title()); self.window['-FORM_MEMBER_INIZ-'].update(d.get('iniz', ''))
-            self.window['-FORM_MEMBER_SEXO_M-'].update(d.get('sexo') == 'Masculino'); self.window['-FORM_MEMBER_SEXO_F-'].update(d.get('sexo') == 'Femenino'); self.window['-FORM_MEMBER_SEXO_D-'].update(d.get('sexo', 'Desconocido') not in ['Masculino', 'Femenino'])
-            self.window['-FORM_MEMBER_DOB-'].update(d.get('fecha_nac', '')); self.window['-FORM_MEMBER_ANNOT-'].update(d.get('annotations', ''))
+            self.window['-FORM_MEMBER_COGNOME-'].update(d.get('cognome', '').title())
+            self.window['-FORM_MEMBER_NOME-'].update(d.get('nome', '').title())
+            self.window['-FORM_MEMBER_INIZ-'].update(d.get('iniz', ''))
+            self.window['-FORM_MEMBER_SEXO_M-'].update(d.get('sexo') == 'Masculino')
+            self.window['-FORM_MEMBER_SEXO_F-'].update(d.get('sexo') == 'Femenino')
+            self.window['-FORM_MEMBER_SEXO_D-'].update(d.get('sexo', 'Desconocido') not in ['Masculino', 'Femenino'])
+            self.window['-FORM_MEMBER_DOB-'].update(d.get('fecha_nac', ''))
+            self.window['-FORM_MEMBER_ANNOT-'].update(d.get('annotations', ''))
             self.window['-FORM_MEMBER_FRAME-'].update(visible=True)
         elif event == '-FORM_MEMBER_SAVE-':
             sexo = 'Masculino' if values['-FORM_MEMBER_SEXO_M-'] else 'Femenino' if values['-FORM_MEMBER_SEXO_F-'] else 'Desconocido'
@@ -2065,7 +1739,8 @@ class SociogramaApp:
             if self.app_state.get('form_member_mode') == 'new':
                 success, msg = hfmember.handle_add_member(institution_name, group_name, member_details)
             else:
-                original_data = self.app_state.get('original_member_data', {}); original_name_key = f"{original_data.get('nome','').title()} {original_data.get('cognome','').title()}"
+                original_data = self.app_state.get('original_member_data', {})
+                original_name_key = f"{original_data.get('nome','').title()} {original_data.get('cognome','').title()}"
                 success, msg = hfmember.handle_modify_member(institution_name, group_name, original_name_key, original_data, member_details)
             sg.popup(msg)
             if success:
@@ -2074,249 +1749,40 @@ class SociogramaApp:
         elif event == '-FORM_MEMBER_CANCEL-':
             self.window['-FORM_MEMBER_FRAME-'].update(visible=False)
         elif event == '-DEL_MEMBER-' and selected_name:
-             if sg.popup_yes_no(f"¿Seguro que quieres eliminar a '{selected_name}'?", title="Confirmar Eliminación") == 'Yes':
+            if sg.popup_yes_no(f"¿Seguro que quieres eliminar a '{selected_name}'?", title="Confirmar Eliminación") == 'Yes':
                 success, msg = hmemb.handle_delete_member(institution_name, group_name, selected_name)
                 sg.popup(msg)
                 if success:
                     self.refresh_members_list(institution_name, group_name)
 
-    def handle_questionnaire_events(self, event, values):
-        """Maneja todos los eventos de la pantalla del Cuestionario."""
-        context = self.app_state.get('context', {})
-        institution_name = context.get('school')
-        group_name = context.get('class_name')
-        member_name = context.get('member')
+# --- BLOQUE 10 DE 10: MANEJADOR DE EVENTOS DE PREGUNTAS (CON DEBUG) Y PUNTO DE ENTRADA ---
 
-        print(f"EVENTO CAPTURADO EN CUESTIONARIO: {event}")  # Debug
-        
-        if event == '-BACK_TO_MEMBERS-':
-            print("Botón Volver clickeado!")
-            context_members = {'school': institution_name, 'class_name': group_name}
-            self.switch_view('-VIEW_MEMBERS-', context_data=context_members)
-        
-        elif event == '-SAVE_Q-':
-            print("Botón Guardar clickeado!")
-            # Tu lógica para guardar...
-            q_data = hquest.get_questionnaire_data_for_member(institution_name, group_name, member_name, app_data_ref=app_data)
-            responses = {}
-            for q in q_data.get('questions', []):
-                selections = []
-                for i in range(q['max_selections']):
-                    value = values.get(f"-Q_{q['data_key']}_{i}-")
-                    if value and value != 'Seleccionar':
-                        selections.append(value)
-                responses[q['data_key']] = selections
-            
-            success, msg = hquest.save_questionnaire_responses(institution_name, group_name, member_name, responses)
-            sg.popup(msg)
-        
-        elif event == '-PDF_TEMPLATE_Q-':
-            print("Botón PDF clickeado!")
-            pdf_bytes, filename = pdf_generator.generate_class_questionnaire_template_pdf(institution_name, group_name)
-            if pdf_bytes:
-                save_path = sg.popup_get_file('Guardar Plantilla', save_as=True, default_extension=".pdf", default_path=filename)
-                if save_path:
-                    try:
-                        with open(save_path, 'wb') as f: 
-                            f.write(pdf_bytes)
-                        sg.popup("Plantilla PDF guardada.")
-                    except Exception as e: 
-                        sg.popup_error(f"Error al guardar: {e}")
-            else: 
-                sg.popup_error("No se pudo generar el PDF.")
-        
-        elif event == '-MANAGE_Q-':
-            print("Botón Gestionar clickeado!")
-            context_q_mgmt = {'school': institution_name, 'class_name': group_name, 'member': member_name}
-            self.switch_view('-VIEW_QUESTIONS-', context_data=context_q_mgmt)
-            
     def handle_questions_events(self, event, values):
-        """Maneja todos los eventos de la pantalla de Gestión de Preguntas."""
+        """
+        Esta función ahora solo maneja la navegación desde la vista de preguntas,
+        ya que la lógica interna fue movida a window_question_management.
+        """
         context = self.app_state.get('context', {})
         institution_name = context.get('school')
         group_name = context.get('class_name')
-        selected_q_display = values.get('-Q_LIST-')[0] if values.get('-Q_LIST-') else None
-        
-        form_is_visible = self.window['-FORM_Q_FRAME-'].visible
-        self.window['-NEW_Q-'].update(disabled=form_is_visible)
-        self.window['-MOD_Q-'].update(disabled=form_is_visible or not selected_q_display)
-        self.window['-DEL_Q-'].update(disabled=form_is_visible or not selected_q_display)
 
+        # La única acción que esta vista principal necesita manejar es cómo se llegó a ella y cómo salir.
         if event == '-BACK_TO_Q-':
-            # CORRECCIÓN: Ahora vuelve al cuestionario del miembro que estábamos editando.
+            # Vuelve a la pantalla de Cuestionario, pasando el contexto necesario.
             self.switch_view('-VIEW_QUESTIONNAIRE-', context_data=self.app_state['context'])
-        elif event == '-Q_LIST-':
-            self.window['-FORM_Q_FRAME-'].update(visible=False)
-        elif event == '-NEW_Q-':
-            self.app_state['form_q_mode'] = 'new'
-            current_defs_tuples = hq.get_question_definitions_for_group(institution_name, group_name)
-            next_order = max([q_def.get('order', -1) for _, q_def in current_defs_tuples]) + 1 if current_defs_tuples else 0
-            self.window['-FORM_Q_TITLE-'].update("Nueva Pregunta")
-            for key in ['-FORM_Q_ID-', '-FORM_Q_TEXT-', '-FORM_Q_TYPE-', '-FORM_Q_DK-']: self.window[key].update('')
-            self.window['-FORM_Q_ORDER-'].update(next_order); self.window['-FORM_Q_MAX-'].update('2')
-            self.window['-FORM_Q_POL_POS-'].update(True); self.window['-FORM_Q_SELF-'].update(False)
-            self.window['-FORM_Q_FRAME-'].update(visible=True)
-        elif event == '-MOD_Q-' and selected_q_display:
-            self.app_state['form_q_mode'] = 'modify'
-            try:
-                q_id = selected_q_display.split('(ID: ')[1][:-1]
-                all_defs = hq.get_question_definitions_for_group(institution_name, group_name)
-                original_data_tuple = next(((qid, q_def) for qid, q_def in all_defs if qid == q_id), None)
-                if original_data_tuple:
-                    d = original_data_tuple[1]; self.app_state['original_q_id'] = q_id
-                    self.window['-FORM_Q_TITLE-'].update(f"Modificar Pregunta (ID: {q_id})"); self.window['-FORM_Q_ID-'].update(q_id)
-                    self.window['-FORM_Q_TEXT-'].update(d.get('text', '')); self.window['-FORM_Q_TYPE-'].update(d.get('type', ''))
-                    self.window['-FORM_Q_DK-'].update(d.get('data_key', '')); self.window['-FORM_Q_ORDER-'].update(d.get('order', '99'))
-                    self.window['-FORM_Q_MAX-'].update(d.get('max_selections', '2'))
-                    self.window['-FORM_Q_POL_POS-'].update(d.get('polarity', 'positive') == 'positive'); self.window['-FORM_Q_POL_NEG-'].update(d.get('polarity') == 'negative')
-                    self.window['-FORM_Q_SELF-'].update(d.get('allow_self_selection', False))
-                    self.window['-FORM_Q_FRAME-'].update(visible=True)
-            except IndexError:
-                sg.popup_error("No se pudo identificar la pregunta seleccionada.")
-        elif event == '-DEL_Q-' and selected_q_display:
-            try:
-                q_id = selected_q_display.split('(ID: ')[1][:-1]
-                if sg.popup_yes_no(f"¿Eliminar la pregunta '{q_id}' y todas sus respuestas asociadas?", title="Confirmar Eliminación") == 'Yes':
-                    success, msg = hq.handle_delete_question(institution_name, group_name, q_id)
-                    sg.popup(msg)
-                    if success: self.refresh_questions_list(institution_name, group_name)
-            except IndexError: sg.popup_error("No se pudo identificar la pregunta seleccionada.")
-        elif event == '-FORM_Q_CANCEL-':
-            self.window['-FORM_Q_FRAME-'].update(visible=False)
-        elif event == '-FORM_Q_SAVE-':
-            try:
-                q_data = {'id': values['-FORM_Q_ID-'], 'text': values['-FORM_Q_TEXT-'], 'type': values['-FORM_Q_TYPE-'], 'data_key': values['-FORM_Q_DK-'], 'polarity': 'positive' if values['-FORM_Q_POL_POS-'] else 'negative', 'order': int(values['-FORM_Q_ORDER-']), 'max_selections': int(values['-FORM_Q_MAX-']), 'allow_self_selection': values['-FORM_Q_SELF-']}
-                if self.app_state.get('form_q_mode') == 'new': success, msg = hq.handle_add_question(institution_name, group_name, q_data)
-                else: success, msg = hq.handle_modify_question(institution_name, group_name, self.app_state.get('original_q_id'), q_data)
-                sg.popup(msg)
-                if success:
-                    self.window['-FORM_Q_FRAME-'].update(visible=False)
-                    self.refresh_questions_list(institution_name, group_name)
-            except ValueError: sg.popup_error("'Orden' y 'Máx. Selecciones' deben ser números enteros.")
-            except Exception as e: sg.popup_error(f"Error inesperado al guardar: {e}")
 
-    def handle_sociogram_events(self, event, values):
-        context = self.app_state.get('context', {})
-        institution_name = context.get('school'); group_name = context.get('class_name')
-        
-        # --- INICIO DE LA CORRECCIÓN ---
-        if event == '-BACK_TO_GROUPS-':
-            # Debe volver a la vista de grupos, pasando el nombre de la institución.
-            self.switch_view('-VIEW_GROUPS-', context_data=institution_name)
-        # --- FIN DE LA CORRECCIÓN ---
-            
-        elif event == '-SOC_GENERATE_INTERACTIVE-':
-            log_message("Botón 'Generar y Ver Sociograma' presionado.", 'info')
-            selected_keys = [k.split('__')[1] for k, v in values.items() if k.startswith('-SOC_REL__') and v]
-            if not selected_keys:
-                sg.popup_error("Por favor, selecciona al menos una relación para dibujar."); return
-
-            params = { 'node_gender_filter': 'Masculino' if values.get('-SOC_GENDER_M-') else 'Femenino' if values.get('-SOC_GENDER_F-') else 'Todos', 'label_display_mode': 'iniciales' if values.get('-SOC_LABEL_MODE-') == 'Iniciales' else 'nombre_apellido', 'connection_gender_type': 'mismo_genero' if values.get('-SOC_CONN_SAME-') else 'diferente_genero' if values.get('-SOC_CONN_DIFF-') else 'todas', 'active_members_filter': values.get('-SOC_ACTIVE_ONLY-', False), 'nominators_option': values.get('-SOC_SHOW_ISOLATES-', True), 'received_color_filter': values.get('-SOC_COLOR_RECEIVERS-', False), 'reciprocal_nodes_color_filter': values.get('-SOC_COLOR_RECIP_NODES-', False), 'style_reciprocal_links': values.get('-SOC_RECIPROCAL_STYLE-', True), 'selected_participant_focus': next((val for txt, val in sociogram_utils.get_participant_options(self.app_state, app_data, hutils) if txt == values.get('-SOC_FOCUS_PARTICIPANT-')), None), 'connection_focus_mode': 'outgoing' if values.get('-SOC_FOCUS_OUT-') else 'incoming' if values.get('-SOC_FOCUS_IN-') else 'all', 'layout_to_use': 'cose', 'highlight_mode': 'top_n' if values.get('-SOC_HL_TOPN-') else 'k_th' if values.get('-SOC_HL_KTH-') else 'none', 'highlight_value': int(values.get('-SOC_HL_VALUE-', 1)) if str(values.get('-SOC_HL_VALUE-')).isdigit() else 1 }
-            
-            output_path = os.path.join(os.getcwd(), "sociograma_interactivo.html")
-            self.window.set_cursor('watch'); self.window.refresh()
-            html_content = sociogram_engine.generate_interactive_html(school_name=institution_name, class_name=group_name, app_data_ref=app_data, selected_data_keys=selected_keys, **params)
-            result_path = sociogram_engine.save_interactive_sociogram(html_content=html_content, output_path=output_path) if html_content else None
-            self.window.set_cursor('arrow')
-            
-            if result_path:
-                webbrowser.open(f'file:///{os.path.abspath(result_path)}'); sg.popup_ok("El sociograma se ha abierto en tu navegador web.", "Éxito")
-            else: sg.popup_error("No se pudo generar el archivo del sociograma. Revisa la consola para más detalles.")
-
-    def handle_matrix_events(self, event, values):
-        context = self.app_state.get('context', {})
-        institution_name = context.get('school'); group_name = context.get('class_name')
-        
-        # --- INICIO DE LA CORRECCIÓN ---
-        if event == '-BACK_TO_GROUPS-':
-            self.switch_view('-VIEW_GROUPS-', context_data=institution_name)
-        # --- FIN DE LA CORRECCIÓN ---
-
-        elif event == '-MATRIX_UPDATE-':
-            selected_keys = [key.split('__')[1] for key, val in values.items() if isinstance(key, str) and key.startswith('-MATRIXQ__') and val]
-            if not selected_keys:
-                sg.popup_ok("Por favor, selecciona al menos una pregunta para generar la matriz."); return
-            
-            result = hsm.handle_draw_sociomatrix_data(institution_name, group_name, selected_keys)
-            
-            if result and result.get('success'):
-                self.app_state['last_matrix_header'] = result.get('header', [])
-                self.app_state['last_matrix_data'] = result.get('data', [])
-                row_colors = result.get('row_colors', [])
-                
-                if self.app_state['last_matrix_data']:
-                    self.window['-MATRIX_TABLE-'].update(values=self.app_state['last_matrix_data'], row_colors=row_colors)
-                else:
-                    self.window['-MATRIX_TABLE-'].update(values=[["No hay datos para mostrar."]])
-            else:
-                self.app_state['last_matrix_header'], self.app_state['last_matrix_data'] = [], []
-                sg.popup_error(result.get('message', "Ocurrió un error desconocido."))
-        elif event == '-MATRIX_PDF-':
-            header = self.app_state.get('last_matrix_header')
-            data = self.app_state.get('last_matrix_data')
-            if not header or not data:
-                sg.popup_error("Primero debes generar una matriz válida."); return
-            
-            pdf_bytes, filename = pdf_generator.generate_sociomatrix_pdf(institution_name, group_name, header, data)
-            if pdf_bytes:
-                save_path = sg.popup_get_file('Guardar PDF', save_as=True, default_extension=".pdf", default_path=filename)
-                if save_path:
-                    try:
-                        with open(save_path, 'wb') as f: f.write(pdf_bytes)
-                        sg.popup("PDF guardado.")
-                    except Exception as e: sg.popup_error(f"Error al guardar: {e}")
-            else: sg.popup_error(f"No se pudo generar el PDF: {filename}")
-            
-    def handle_diana_events(self, event, values):
-        context = self.app_state.get('context', {})
-        institution_name = context.get('school'); group_name = context.get('class_name')
-
-        # --- INICIO DE LA CORRECCIÓN ---
-        if event == '-BACK_TO_GROUPS-':
-            self.switch_view('-VIEW_GROUPS-', context_data=institution_name)
-        # --- FIN DE LA CORRECCIÓN ---
-            
-        elif event == '-DIANA_GENERATE-':
-            selected_keys = [key.split('__')[1] for key, val in values.items() if isinstance(key, str) and key.startswith('-DIANA_Q__') and val]
-            if not selected_keys: sg.popup_error("Selecciona al menos una pregunta."); return
-            
-            sg.popup_quick_message("Generando Diana...", background_color='lightblue')
-            image_bytes = hgrp.handle_generate_diana_data(institution_name, group_name, selected_keys, values['-DIANA_SHOW_LINES-'])
-            
-            if image_bytes:
-                self.app_state['diana_image_bytes'] = image_bytes
-                self.window['-DIANA_SAVE-'].update(disabled=False)
-                # Actualizar la imagen en la GUI
-                self.window['-DIANA_IMAGE-'].update(data=image_bytes)
-            else:
-                sg.popup_error("No se pudo generar la imagen.")
-                self.app_state['diana_image_bytes'] = None
-                self.window['-DIANA_IMAGE-'].update(data=None)
-                self.window['-DIANA_SAVE-'].update(disabled=True)
-        elif event == '-DIANA_SAVE-':
-            image_bytes = self.app_state.get('diana_image_bytes')
-            if image_bytes:
-                filename = f"Diana_{institution_name}_{group_name}.png".replace('\"','').replace("'", "")
-                save_path = sg.popup_get_file('Guardar Diana (PNG)', save_as=True, default_extension=".png", file_types=(("PNG", "*.png"),), default_path=filename)
-                if save_path:
-                    try:
-                        with open(save_path, 'wb') as f: f.write(image_bytes)
-                        sg.popup("Diana guardada.")
-                    except Exception as e: sg.popup_error(f"Error al guardar: {e}")
-            else: sg.popup_error("Primero genera una diana.")
-
-
-# --- BLOQUE 6: PUNTO DE ENTRADA DE LA APLICACIÓN ---
+# =============================================================================
+#  BLOQUE 6: PUNTO DE ENTRADA DE LA APLICACIÓN
+# =============================================================================
 if __name__ == "__main__":
     try:
-        app_data.initialize_data() # Aseguramos que los datos están cargados
+        app_data.initialize_data()
         show_coffee_popup()
         
-        # En lugar de llamar a main(), ahora creamos una instancia de nuestra
-        # nueva clase y ejecutamos su propio bucle interno.
         app = SociogramaApp()
         app.run()
         
     except Exception as e:
         error_details = f'Error no controlado en Sociograma:\n\n{e}\n\nTraceback:\n{traceback.format_exc()}'
         sg.popup_error(error_details, title="Error Fatal en Sociograma")
+

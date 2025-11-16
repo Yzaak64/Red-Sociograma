@@ -53,49 +53,43 @@ def get_participant_options(app_state, app_data_ref, handlers_utils_ref):
         return [('Error al cargar', None)]
 
 
-def get_relation_options(app_state, app_data_ref):
+def get_relation_options(institution_name, group_name, app_data_ref):
     """
-    Obtiene las relaciones (preguntas) de un grupo para poblar checkboxes.
-    AHORA INCLUYE LA POLARIDAD para los botones de selección rápida.
-    
-    Args:
-        app_state (dict): El estado de la aplicación.
-        app_data_ref: Referencia al módulo de datos (sociograma_data).
-
-    Returns:
-        Una lista de diccionarios, cada uno con 'data_key', 'label' y 'polarity'.
+    Versión FINAL. Muestra tanto el tipo estructural como la categoría temática en la etiqueta.
+    Ej: (Pos) Pregunta... [Acción Real] (Trabajo)
     """
-    context = app_state.get('current_group_viewing_members')
-    if not context or not context.get('school') or not context.get('class_name'):
-        print("Error en get_relation_options: Contexto de grupo no válido.")
+    if not institution_name or not group_name:
         return []
 
-    institution_name = context['school']
-    group_name = context['class_name']
-
     try:
-        app_data_ref.regenerate_relationship_maps_for_class(institution_name, group_name)
-        
-        relation_options_map = app_data_ref.sociogram_relation_options_map
-        # Obtenemos las definiciones completas para poder acceder a la polaridad
         current_class_questions = app_data_ref.get_class_question_definitions(institution_name, group_name)
-        
         options_list = []
-        if isinstance(relation_options_map, dict):
-            sorted_items = sorted(
-                [(k, v) for k, v in relation_options_map.items() if k != 'all'],
-                key=lambda item: item[1]
-            )
-            for data_key, label in sorted_items:
-                # Buscamos la definición de la pregunta para obtener su polaridad
-                q_def = next((d for d in current_class_questions.values() if d.get('data_key') == data_key), {})
+        if isinstance(current_class_questions, dict):
+            sorted_q_items = sorted(current_class_questions.values(), key=lambda q: q.get('order', 99))
+
+            for q_def in sorted_q_items:
+                data_key = q_def.get('data_key')
+                if not data_key: continue
+
                 polarity = q_def.get('polarity', 'neutral')
-                # <-- CAMBIO CLAVE: Añadimos la polaridad al diccionario -->
-                options_list.append({'data_key': data_key, 'label': label, 'polarity': polarity})
+                polarity_char = polarity[:3].title()
+                
+                question_text = q_def.get('text', 'Pregunta sin texto')
+                question_type = q_def.get('type', '') # [Acción Real]
+                question_category = q_def.get('category', '') # Trabajo
+                
+                # Construir la etiqueta completa
+                label_parts = [f"({polarity_char})", question_text]
+                if question_type:
+                    label_parts.append(question_type)
+                if question_category:
+                    label_parts.append(f"({question_category})")
+                
+                label = " ".join(label_parts)
+                options_list.append({'data_key': data_key, 'label': label.strip(), 'polarity': polarity})
         
         return options_list
     except Exception as e:
-        print(f"Error en get_relation_options al regenerar/procesar mapas: {e}")
         traceback.print_exc()
         return []
 

@@ -54,6 +54,11 @@ def prepare_and_draw_sociogram(app_state, ui_values, layout_to_use, app_data_ref
     highlight_mode = ui_values.get('-SOC_HIGHLIGHT_MODE-', 'none')
     highlight_value = ui_values.get('-SOC_HIGHLIGHT_VALUE-', 1)
 
+    # --- INICIO DE LA MODIFICACIÓN ---
+    aggregation_mode = ui_values.get('-SOC_AGGREGATION_MODE_KEY-') # Pasar la clave, no el texto
+    perceiver_name = ui_values.get('-SOC_PERCEIVER-')
+    # --- FIN DE LA MODIFICACIÓN ---
+
     try:
         # **NOTA IMPORTANTE:** `sociogram_engine.draw_sociogramma` también necesita ser refactorizado.
         # Asumiremos que ahora devuelve una figura de matplotlib en lugar de un widget.
@@ -82,9 +87,10 @@ def prepare_and_draw_sociogram(app_state, ui_values, layout_to_use, app_data_ref
             layout_to_use=layout_to_use,
             highlight_mode=highlight_mode,
             highlight_value=highlight_value,
-            # Parámetros que ya no son necesarios porque la UI se maneja fuera:
-            # ui_sociogramma_dict_ref=None,
-            # registro_output=None
+            # --- INICIO DE LA MODIFICACIÓN ---
+            aggregation_mode=aggregation_mode,
+            perceiver_name=perceiver_name
+            # --- FIN DE LA MODIFICACIÓN ---
         )
         
         # Generar leyenda HTML a partir de `legend_info`

@@ -1125,150 +1125,245 @@ def generate_pdf_from_html_content(html_string, output_filename_base):
 
 # --- FIN BLOQUE 6 ---
 # --- BLOQUE 7: GENERADOR DE IMAGEN DE LA DIANA DE AFINIDAD ---
-def generate_affinity_diana_image(
-    institution_name,
-    group_name,
-    members_data_list_detailed,
-    edges_data,
-    show_lines=True,
-    registro_output=None, # Se mantiene por compatibilidad, pero no se usa activamente
-    num_zonas_definidas=4,
-    labels_zonas=None
-):
+def generate_distance_diana_image(title_text, members_data_list, score_key, score_range, ring_labels):
     """
-    VERSIÓN FINAL CON LOGS: Genera la imagen de la Diana de Afinidad con Matplotlib,
-    con toda la lógica de estilo del notebook original y logs detallados.
+    VERSIÓN FINAL: Genera un gráfico de diana estilo "distancia" o "categórico".
+    - Maneja tanto puntuaciones numéricas (CIVSOC) como categorías de texto (Precisión).
+    - Para categorías, define un orden lógico de los anillos.
+    """
+    if not MATPLOTLIB_AVAILABLE: return None
     
-    Devuelve un objeto BytesIO con la imagen PNG, o None si hay un error.
-    """
-    def log_diana(message):
-        """Función de logging local para esta función."""
-        print(f"[DIANA_ENGINE_LOG] {message}")
-
-    log_diana("--- Iniciando generate_affinity_diana_image (versión completa) ---")
-
-    if not MATPLOTLIB_AVAILABLE:
-        log_diana("FALLO CRÍTICO: Matplotlib y/o sus dependencias (NumPy) no están disponibles.")
-        return None
-
-    if not members_data_list_detailed:
-        log_diana("AVISO: No hay miembros para generar la diana. Devolviendo None.")
-        return None
-
-    # Ordenar miembros por puntaje para la lógica de posicionamiento
-    members_ordenados = sorted(
-        members_data_list_detailed,
-        key=lambda x: (
-            x.get('total_recibido', 0), 
-            x.get('primeras_opciones', 0), 
-            x.get('segundas_opciones', 0), 
-            x.get('terceras_opciones', 0), 
-            str(x.get('id_corto', 'Z'))
-        ),
-        reverse=True
-    )
-
-    # Crear figura y ejes de Matplotlib
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'aspect': 'equal'})
-    ax.set_xlim(-1.35, 1.35)
-    ax.set_ylim(-1.35, 1.35)
-    ax.axis('off')
-    
-    # Dibujar gradiente de fondo
-    log_diana("Dibujando fondo con gradiente...")
-    n_grad_rings_bg = 100
-    color_centro_grad_bg = np.array([1.0, 0.9, 0.7]) # Naranja/amarillo suave
-    color_borde_grad_bg = np.array([1.0, 1.0, 1.0])   # Blanco
-    for i_grad_bg in range(n_grad_rings_bg, 0, -1):
-        radio_grad_bg = i_grad_bg / n_grad_rings_bg
-        frac_grad_bg = (n_grad_rings_bg - i_grad_bg) / (n_grad_rings_bg - 1 if n_grad_rings_bg > 1 else 1)
-        color_actual_grad_rgb_bg = np.clip(color_borde_grad_bg * (1 - frac_grad_bg) + color_centro_grad_bg * frac_grad_bg, 0, 1)
-        grad_patch_bg = mpatches.Wedge((0, 0), radio_grad_bg, 0, 360, width=(radio_grad_bg / n_grad_rings_bg), facecolor=tuple(color_actual_grad_rgb_bg), edgecolor='none', zorder=0)
-        ax.add_patch(grad_patch_bg)
-    
-    # Dibujar círculos de puntaje
-    puntajes_reales = sorted(list(set(mem.get('total_recibido', 0) for mem in members_ordenados)), reverse=True)
-    radios_puntajes = {}
-    if puntajes_reales:
-        log_diana(f"Puntajes reales encontrados para los círculos: {puntajes_reales}")
-        max_p, min_p = puntajes_reales[0], puntajes_reales[-1]
-        for puntaje in puntajes_reales:
-            radio = 0.98 if max_p == min_p else 0.15 + ((max_p - puntaje) / (max_p - min_p)) * (0.98 - 0.15)
-            radios_puntajes[puntaje] = radio
-            circulo = mpatches.Circle((0, 0), radio, edgecolor='#333333', facecolor='none', lw=0.5, ls=':', zorder=15)
-            ax.add_patch(circulo)
-            ax.text(0, radio + 0.022, str(puntaje), ha='center', va='bottom', fontsize=6.5, color='#222222', zorder=20)
+    ax.set_facecolor('white')
+    ax.set_xlim(-1.1, 1.1); ax.set_ylim(-1.1, 1.1); ax.axis('off')
+    ax.set_title(title_text, fontsize=14, pad=20, weight='bold')
 
-    # Posicionar los nodos (miembros)
-    log_diana("Posicionando nodos en la diana...")
+    radios = {}
+    # Determinar si estamos trabajando con categorías (texto) o números
+    is_categorical = isinstance(next(iter(ring_labels.keys()), None), str)
+
+    if is_categorical:
+        # --- Lógica para Anillos Categóricos (Precisión) ---
+        # Define el orden lógico de los anillos, del más importante (centro) al menos importante (exterior)
+        score_order = ['Foco', 'Aciertos', 'Indiferencia', 'Errores/Omisiones']
+        
+        # Filtra solo las categorías que realmente existen en los datos para no crear anillos vacíos
+        unique_scores_ordered = [s for s in score_order if s in ring_labels]
+        
+        num_rings = len(unique_scores_ordered)
+        for i, score in enumerate(unique_scores_ordered):
+            # Asigna radios del centro (0.1) al borde (1.0) según el orden definido
+            radio = 0.1 + (i / (num_rings - 1 if num_rings > 1 else 1)) * 0.9
+            radios[score] = radio
+    else:
+        # --- Lógica para Anillos Numéricos (CIVSOC) ---
+        min_score, max_score = score_range
+        score_span = (max_score - min_score) if (max_score - min_score) != 0 else 1.0
+        for score in ring_labels.keys():
+            # El radio 0 es el centro. Los demás se distribuyen linealmente.
+            radios[score] = 0.1 + ((max_score - score) / score_span) * 0.9
+
+    # Dibujar los anillos y sus etiquetas
+    for score, radio in sorted(radios.items(), key=lambda item: item[1]):
+        label = ring_labels[score]
+        if score != 0 and score != 'Foco': # No dibujar el anillo del centro
+            ax.add_patch(mpatches.Circle((0, 0), radio, edgecolor='black', facecolor='none', lw=1.0))
+            ax.text(0, radio, label, ha='center', va='bottom', fontsize=10, color='black', bbox=dict(facecolor='white', edgecolor='none', pad=0.1))
+            ax.text(0, -radio, label, ha='center', va='top', fontsize=10, color='black', bbox=dict(facecolor='white', edgecolor='none', pad=0.1))
+
+    members_by_score = collections.defaultdict(list)
+    for mem in members_data_list:
+        score = mem.get(score_key)
+        members_by_score[score].append(mem)
+
+    # Colocar a los miembros en el gráfico
+    for score, members in members_by_score.items():
+        if not members or (radio := radios.get(score)) is None: continue
+        
+        # Si el score es 0 o 'Foco', colocar en el centro absoluto
+        if score == 0 or score == 'Foco':
+            ax.text(0, 0, members[0]['id_corto'], ha='center', va='center', fontsize=10,
+                    bbox=dict(facecolor='lightgray', edgecolor='black', boxstyle='square,pad=0.5'))
+            continue
+
+        angle_step = 360 / len(members)
+        for i, member in enumerate(members):
+            angle_rad = np.deg2rad(i * angle_step + np.random.uniform(0, 45))
+            x, y = radio * np.cos(angle_rad), radio * np.sin(angle_rad)
+            ax.text(x, y, member['id_corto'], ha='center', va='center', fontsize=9,
+                    bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.4'))
+
+    buffer_out = io.BytesIO()
+    try:
+        plt.savefig(buffer_out, format='png', dpi=150, bbox_inches='tight', pad_inches=0.2)
+        plt.close(fig)
+        return buffer_out.getvalue()
+    except Exception:
+        if 'fig' in locals(): plt.close(fig)
+        return None
+    
+def generate_affinity_diana_image(title_text, members_data_list, edges_data, show_lines=True):
+    """
+    NUEVA FUNCIÓN DEDICADA: Genera la Diana de Afinidad (popularidad) con fondo degradado.
+    Esta función es específica para los modos "Afinidad" y "Meta-Percepción".
+    """
+    if not MATPLOTLIB_AVAILABLE: return None
+    if not members_data_list: return None
+
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw={'aspect': 'equal'})
+    ax.set_xlim(-1.1, 1.1); ax.set_ylim(-1.1, 1.1); ax.axis('off')
+
+    # Fondo degradado
+    n_rings = 100
+    color_center = np.array([1.0, 0.9, 0.7]); color_edge = np.array([1.0, 1.0, 1.0])
+    for i in range(n_rings, 0, -1):
+        radius = i / n_rings; fraction = (n_rings - i) / (n_rings - 1 if n_rings > 1 else 1)
+        color = np.clip(color_edge * (1 - fraction) + color_center * fraction, 0, 1)
+        ax.add_patch(mpatches.Wedge((0, 0), radius, 0, 360, width=(radius / n_rings), facecolor=tuple(color), edgecolor='none', zorder=0))
+    
+    ax.set_title(title_text, fontsize=12, pad=20, weight='bold')
+
+    members_sorted = sorted(members_data_list, key=lambda x: x.get('total_recibido', 0), reverse=True)
+    scores = sorted(list(set(mem.get('total_recibido', 0) for mem in members_sorted)), reverse=True)
+    score_radios = {}
+    if scores:
+        max_s, min_s = scores[0], scores[-1]
+        for score in scores:
+            radio = 0.98 if max_s == min_s else 0.15 + ((max_s - score) / (max_s - min_s if max_s != min_s else 1)) * (0.98 - 0.15)
+            score_radios[score] = radio
+            ax.add_patch(mpatches.Circle((0, 0), radio, edgecolor='#333333', facecolor='none', lw=0.5, ls=':', zorder=15))
+            ax.text(0, radio + 0.022, str(score), ha='center', va='bottom', fontsize=6.5, color='#222222', zorder=20)
+    
+    members_by_score = collections.defaultdict(list)
+    for mem in members_sorted: members_by_score[mem.get('total_recibido', 0)].append(mem)
+
     node_positions = {}
-    members_por_puntaje = collections.defaultdict(list)
-    for mem in members_ordenados:
-        members_por_puntaje[mem.get('total_recibido', 0)].append(mem)
+    for score, members in members_by_score.items():
+        if not members: continue
+        radio = score_radios.get(score, 0.98)
+        angle_start = np.random.uniform(0, 2 * np.pi)
+        for i, member in enumerate(members):
+            angle = angle_start + (i * (2 * np.pi / len(members)))
+            x, y = (radio * np.cos(angle), radio * np.sin(angle)) if radio > 0.001 else (0, 0)
+            node_positions[member['nombre_completo']] = (x, y)
 
-    for puntaje, lista_miembros in members_por_puntaje.items():
-        n_miembros = len(lista_miembros)
-        if n_miembros == 0: continue
-        
-        radio_nominal = radios_puntajes.get(puntaje, 0.98)
-        angulo_inicial = np.random.uniform(0, 2 * np.pi)
-        
-        for i, member in enumerate(lista_miembros):
-            nombre_completo = member.get('nombre_completo')
-            id_corto = member.get('id_corto')
-            sexo = member.get('sexo', 'Desconocido')
-            
-            angulo = angulo_inicial + (i * (2 * np.pi / n_miembros))
-            radio = radio_nominal
-            
-            x, y = (radio * np.cos(angulo), radio * np.sin(angulo)) if radio > 0.001 else (0, 0)
-            node_positions[nombre_completo] = (x, y)
-
-            marker, fc = ('^', '#FFC0CB') if sexo.lower() == 'femenino' else ('o', '#ADD8E6') if sexo.lower() == 'masculino' else ('s', '#A0E0A0')
-            node_size = max(40, 1200 / (n_miembros**0.5 + 2))
-            font_size = max(5, 8 - (n_miembros / 5))
-            
-            ax.scatter(x, y, s=node_size, marker=marker, edgecolor='#101010', facecolor=fc, zorder=25, lw=0.45)
-            ax.text(x, y, id_corto, ha='center', va='center', fontsize=font_size, color='#000000', zorder=28, weight='normal')
-            log_diana(f"  -> Nodo '{id_corto}' dibujado en ({x:.2f}, {y:.2f}) con puntaje {puntaje}")
-
-    # Dibujar las líneas de elección si está activado
     if show_lines and edges_data:
-        log_diana("Dibujando líneas de elección...")
-        for nominator, nominee, _, _ in edges_data:
+        for nominator, nominee in edges_data:
             if nominator in node_positions and nominee in node_positions:
                 pos_start, pos_end = node_positions[nominator], node_positions[nominee]
-                ax.annotate("", xy=pos_end, xytext=pos_start,
-                            arrowprops=dict(arrowstyle="->", color="gray",
-                                            shrinkA=15, shrinkB=15, # No tocar el nodo
-                                            patchA=None, patchB=None,
-                                            connectionstyle="arc3,rad=0.1", # Curva ligera
-                                            alpha=0.6, lw=0.7), zorder=5)
+                ax.annotate("", xy=pos_end, xytext=pos_start, arrowprops=dict(arrowstyle="->", color="gray", shrinkA=15, shrinkB=15, connectionstyle="arc3,rad=0.1", alpha=0.6, lw=0.7), zorder=5)
 
-    # Título y Leyenda final
-    ax.set_title(f"Diana de Afinidad: {group_name}\n({institution_name})", fontsize=14, pad=20, weight='bold')
-    legend_handles = [
-        mlines.Line2D([], [], color='black', marker='o', ls='None', ms=7, mfc='#ADD8E6', mec='#101010', label='Masculino'),
-        mlines.Line2D([], [], color='black', marker='^', ls='None', ms=7, mfc='#FFC0CB', mec='#101010', label='Femenino'),
-        mlines.Line2D([], [], color='black', marker='s', ls='None', ms=6, mfc='#A0E0A0', mec='#101010', label='Desconocido/Otro')
-    ]
+    for member in members_data_list:
+        if member.get('nombre_completo') not in node_positions: continue
+        x, y = node_positions[member['nombre_completo']]
+        sexo = member.get('sexo', 'Desconocido').lower()
+        marker, fc = ('^', '#FFC0CB') if sexo == 'femenino' else ('o', '#ADD8E6') if sexo == 'masculino' else ('s', '#A0E0A0')
+        ax.scatter(x, y, s=180, marker=marker, edgecolor='#101010', facecolor=fc, zorder=25, lw=0.7)
+        ax.text(x, y, member.get('id_corto'), ha='center', va='center', fontsize=7, color='#000000', zorder=28, weight='bold')
+
+    legend_handles = [mlines.Line2D([],[],color='black',marker='o',ls='None',ms=7,mfc='#ADD8E6',mec='#101010',label='Masculino'), mlines.Line2D([],[],color='black',marker='^',ls='None',ms=7,mfc='#FFC0CB',mec='#101010',label='Femenino'), mlines.Line2D([],[],color='black',marker='s',ls='None',ms=6,mfc='#A0E0A0',mec='#101010',label='Desconocido/Otro')]
     ax.legend(handles=legend_handles, title="Símbolos", loc='upper right', bbox_to_anchor=(1.14, 1.02), fontsize='x-small', title_fontsize='small')
-    fig.tight_layout(rect=[0, 0.05, 1, 0.95]) # Ajustar márgenes para que todo quepa
+    fig.tight_layout(rect=[0, 0.05, 1, 0.95])
     
-    # Guardar la figura generada en un buffer de memoria en lugar de un archivo
     buffer_out = io.BytesIO()
     try:
         plt.savefig(buffer_out, format='png', dpi=150, bbox_inches='tight', pad_inches=0.1)
-        plt.close(fig) # Liberar memoria de la figura
-        buffer_out.seek(0) # Rebobinar el buffer para que se pueda leer desde el principio
-        log_diana("Imagen de la Diana generada y guardada en buffer exitosamente.")
-        return buffer_out
-    except Exception as e:
-        log_diana(f"ERROR CRÍTICO al guardar imagen de la Diana en el buffer: {e}\n{traceback.format_exc(limit=2)}")
-        if 'fig' in locals() and fig is not None and plt is not None:
-             try: plt.close(fig)
-             except Exception: pass
+        plt.close(fig)
+        return buffer_out.getvalue()
+    except Exception:
+        if 'fig' in locals(): plt.close(fig)
+        return None    
+    
+# --- FIN BLOQUE 7 ---
+
+def generate_sociomatrix_image(header, data, legend_map=None):
+    """
+    Versión final y definitiva. Genera una imagen PNG de la matriz con anchos de
+    columna dinámicos para asegurar que todo el contenido sea visible.
+    """
+    if not MATPLOTLIB_AVAILABLE:
+        print("ERROR: Matplotlib no está disponible para generar la imagen de la matriz.")
         return None
 
-# --- FIN BLOQUE 7 ---
+    try:
+        # --- 1. Pre-procesamiento de datos y colores (sin cambios) ---
+        clean_data = []
+        cell_colors = []
+        for row in data:
+            clean_row, color_row = [], []
+            for cell_val in row:
+                color_to_apply = 'white'
+                if '---' in str(cell_val): color_to_apply = '#DCE6F2'
+                elif 'Total' in str(cell_val): color_to_apply = '#F0F0F0'
+                # ... (resto de la lógica de colores)
+                clean_row.append(str(cell_val).replace('---', ''))
+                color_row.append(color_to_apply)
+            clean_data.append(clean_row)
+            cell_colors.append(color_row)
+        
+        # --- 2. CÁLCULO DE ANCHOS DE COLUMNA DINÁMICOS (LÓGICA MEJORADA) ---
+        col_widths = [0] * len(header)
+        # Un factor para convertir la longitud del texto en ancho para la figura
+        font_factor = 0.1 
+        
+        # Calcula el ancho necesario para cada columna basándose en el texto más largo de esa columna
+        for j, col_name in enumerate(header):
+            # Ancho del encabezado
+            max_len = len(col_name)
+            # Compara con cada celda de esa columna
+            for i in range(len(clean_data)):
+                # Ignorar las filas de encabezado de género que ocupan toda la fila
+                if '---' not in str(data[i][0]):
+                    max_len = max(max_len, len(str(clean_data[i][j])))
+            
+            col_widths[j] = max_len * font_factor + 0.4 # Añade un pequeño padding
+
+        # Asegurar un ancho mínimo para las columnas de iniciales
+        for j in range(1, len(header) - 1):
+            col_widths[j] = max(col_widths[j], 0.7)
+        # Forzar un ancho mayor para la primera columna (Nombres) y la última (Totales)
+        col_widths[0] = max(col_widths[0], 3.0)
+        col_widths[-1] = max(col_widths[-1], 1.8)
+
+        # --- 3. Creación de la figura y la tabla ---
+        num_rows = len(clean_data)
+        fig_height = num_rows * 0.4
+        fig_width = sum(col_widths) # El ancho total es la suma de los anchos calculados
+        
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax.axis('off')
+
+        table = ax.table(
+            cellText=clean_data,
+            colLabels=header,
+            colWidths=[w/fig_width for w in col_widths], # Anchos como proporción del total
+            cellLoc='center',
+            loc='center',
+            cellColours=cell_colors
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1, 1.8)
+
+        # --- 4. Estilos (sin cambios) ---
+        for (i, j), cell in table.get_celld().items():
+            if i == 0: cell.set_text_props(weight='bold'); cell.set_facecolor('#E0E0E0')
+            if j == 0: cell.set_text_props(ha='left', wrap=True)
+            row_idx = i - 1
+            if row_idx >= 0 and ('---' in str(data[row_idx][0]) or 'Total' in str(data[row_idx][0])):
+                 cell.set_text_props(weight='bold')
+            cell.set_edgecolor('grey')
+
+        # --- 5. Guardado en memoria (sin cambios) ---
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=120)
+        plt.close(fig)
+        buf.seek(0)
+        return buf.getvalue()
+
+    except Exception as e:
+        traceback.print_exc()
+        return None
+    
 print("pdf_generator.py refactorizado y COMPLETO, listo para su uso en la aplicación de escritorio.")
+

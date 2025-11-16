@@ -1,10 +1,10 @@
 # handlers_utils.py
-# (v1.7 - Versión final para aplicación de escritorio.
-#  Incluye función de normalización de nombres y la aplica para
-#  hacer la obtención de opciones más robusta.)
+# (v1.9 - Lógica de 'cs' en get_aggregated_network actualizada para funcionar solo con percepción)
 
 import re
 import unicodedata
+import collections
+import math # <-- Se añade esta importación para la nueva lógica de CS
 
 # No se importan widgets aquí, este módulo debe ser independiente de la UI.
 
@@ -34,21 +34,8 @@ def get_member_options_for_dropdown(school_name, class_name,
                                      exclude_member_display_name=None,
                                      include_all_option=False):
     """
-    Obtiene una lista de tuplas (display_label, value) para poblar un
-    desplegable de selección de miembros. Es la función centralizada para
-    obtener listas de miembros.
-
-    Args:
-        school_name (str): Nombre de la institución.
-        class_name (str): Nombre del grupo.
-        app_data_ref: Referencia al módulo de datos (sociograma_data).
-        order_by (str): 'Apellido' o 'Nombre' para el ordenamiento.
-        exclude_member_display_name (str, optional): Nombre completo del miembro a excluir.
-        include_all_option (bool): Si es True, añade ("Todos (Grafo Completo)", None) al
-                                    principio. Si es False, añade ("Seleccionar", None).
-
-    Returns:
-        list: Una lista de tuplas para las opciones del desplegable.
+    CORREGIDO: Obtiene una lista de tuplas para poblar un desplegable de miembros,
+    asegurando que la etiqueta de visualización sea siempre el NOMBRE COMPLETO.
     """
     if not app_data_ref or not hasattr(app_data_ref, 'members_data'):
         print("ERROR en get_member_options: app_data_ref no es válido.")
@@ -56,17 +43,15 @@ def get_member_options_for_dropdown(school_name, class_name,
 
     options = []
     if include_all_option:
-        # Para el filtro del sociograma, 'None' sigue siendo correcto.
+        # Para el filtro del sociograma, la opción "Todos" es la primera
         options.append(('Todos (Grafo Completo)', None))
     else:
-        # Para el cuestionario, hacemos que "Seleccionar" sea una opción real.
-        # El valor interno será un string vacío '' para representar "sin elección".
+        # Para el cuestionario, "Seleccionar" es la opción por defecto
         options.append(('Seleccionar', ''))
 
     local_members_data = app_data_ref.members_data
     members_list_all = local_members_data.get(school_name, {}).get(class_name, [])
     if not members_list_all:
-        # Devuelve la opción por defecto ("Todos" o "Seleccionar") si no hay miembros
         return options
 
     members_to_process = list(members_list_all)
@@ -78,6 +63,7 @@ def get_member_options_for_dropdown(school_name, class_name,
             if normalizar_nombre_para_comparacion(f"{m.get('nome', '')} {m.get('cognome', '')}") != normalized_exclude_name
         ]
 
+    # Ordenar la lista para una visualización consistente en el dropdown
     if order_by == 'Nombre':
         key_func = lambda s: (str(s.get('nome', '')).strip().upper(), str(s.get('cognome', '')).strip().upper())
     else:  # Por defecto, ordenar por Apellido
@@ -94,13 +80,12 @@ def get_member_options_for_dropdown(school_name, class_name,
         cognome_titulo = str(member_dict.get('cognome', '')).strip().title()
         
         display_label = f"{nombre_titulo} {cognome_titulo}".strip()
-        internal_value = display_label  # El valor y el texto son los mismos para PySimpleGUI
+        internal_value = display_label
 
         if internal_value:
             options.append((display_label, internal_value))
 
     return options
-
 
 def generar_opciones_dropdown_miembros_main_select(lista_miembros):
     """
@@ -110,8 +95,6 @@ def generar_opciones_dropdown_miembros_main_select(lista_miembros):
     if not lista_miembros:
         return []
         
-    # Ordenar la lista aquí para asegurar consistencia
-    # Ordenamos por Nombre, Apellido
     sorted_list = sorted(lista_miembros, key=lambda m: (str(m.get('nome','')).strip().title(), str(m.get('cognome','')).strip().title()))
 
     options = []
@@ -123,5 +106,56 @@ def generar_opciones_dropdown_miembros_main_select(lista_miembros):
             options.append(display_text)
     return options
 
+def get_aggregated_network(institution_name, group_name, aggregation_mode, app_data_ref, perceiver_name=None, selected_keys=None, consensus_threshold=50):
+    """
+    Función central para obtener una red basada en diferentes modos de agregación.
+    v4.0 - Versión final y limpia. Solo procesa 'real_actions' y 'meta_perceptions'.
+           Los modos matriciales (CIVSOC, Accuracy) se calculan en sus propios manejadores.
+    """
+    members_list = app_data_ref.members_data.get(institution_name, {}).get(group_name, [])
+    if not members_list:
+        return {}
 
+    member_names = [f"{m.get('nome','').title()} {m.get('cognome','').title()}" for m in members_list]
+    
+    output_network = collections.defaultdict(lambda: collections.defaultdict(list))
+    all_question_defs_by_id = app_data_ref.get_class_question_definitions(institution_name, group_name)
+    all_question_defs = {v['data_key']: v for k, v in all_question_defs_by_id.items()}
+    cognitive_data = app_data_ref.cognitive_social_structures_data
+
+    if not selected_keys:
+        selected_keys = list(all_question_defs.keys())
+
+    # --- MODO 1: Acciones Reales (Estándar) ---
+    if aggregation_mode == 'real_actions':
+        real_actions_data = {}
+        for key, responses in app_data_ref.questionnaire_responses_data.items():
+            if key[0] == institution_name and key[1] == group_name:
+                filtered_responses = {q_key: nominees for q_key, nominees in responses.items() if q_key in selected_keys}
+                if filtered_responses:
+                    real_actions_data[key] = filtered_responses
+        return real_actions_data
+        
+    # --- MODO 2: Meta-Percepción (GLOBAL - SIN FOCO) ---
+    elif aggregation_mode == 'meta_perceptions':
+        for ego_name in member_names:
+            ego_perceptions = cognitive_data.get((institution_name, group_name, ego_name), {})
+            for meta_key in selected_keys:
+                q_def = all_question_defs.get(meta_key)
+                if not q_def or q_def.get('perceived_nominator') != '[SELF]':
+                    continue
+
+                if meta_key in ego_perceptions:
+                    believed_nominators = ego_perceptions[meta_key].get(ego_name, [])
+                    for alter_name in believed_nominators:
+                        response_key = (institution_name, group_name, alter_name)
+                        output_network[response_key][meta_key].append(ego_name)
+        return dict(output_network)
+
+    # Para los modos 'accuracy_analysis' y 'civsoc_matrix', esta función no necesita
+    # hacer nada. El cálculo de la matriz se realiza directamente en `window_sociomatrix`
+    # usando funciones de `handlers_groups`. Devolver una red vacía es el
+    # comportamiento correcto.
+    return dict(output_network)
+    
 print("handlers_utils.py refactorizado y listo para su uso en la aplicación de escritorio.")

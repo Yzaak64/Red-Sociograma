@@ -1,139 +1,137 @@
-# handlers_sociomatrix.py
-# (v27.1 - Refactorizado para aplicación de escritorio.
-#  Usa "Institución"/"Grupo", "sexo" y "miembro".
-#  La función principal devuelve datos de tabla en lugar de HTML.)
-
+# handlers_sociomatrix.py (v2.1 - Corregido y robustecido)
+import os
+import webbrowser
 import collections
-from sociograma_data import members_data, get_class_question_definitions, questionnaire_responses_data
+from sociograma_data import members_data, get_class_question_definitions, questionnaire_responses_data, cognitive_social_structures_data
 from handlers_utils import normalizar_nombre_para_comparacion
 
 def log_matrix(message):
     """Función de logging para la consola."""
     print(f"[MATRIX_HANDLER_LOG] {message}")
 
-def handle_draw_sociomatrix_data(institution_name, group_name, selected_data_keys_list):
+def handle_draw_sociomatrix_data(institution_name, group_name, selected_data_keys_list, 
+                                 aggregation_mode=None,
+                                 perceiver_name=None,
+                                 allow_self_on_diagonal=False,
+                                 network_data_override=None):
     """
-    Versión final que respeta estrictamente el orden de los miembros tal como
-    aparecen en sociograma_data.py tanto para las filas como para las columnas.
+    Versión final, definitiva y robusta.
+    - Corrige el bug que ignoraba los datos de `network_data_override`.
     """
-    log_matrix("--- Iniciando handle_draw_sociomatrix_data (v. respetando orden original de datos) ---")
+    log_matrix(f"--- Iniciando handle_draw_sociomatrix_data (v2.2 - CORREGIDO) ---")
     
     members_list_raw = members_data.get(institution_name, {}).get(group_name, [])
     if not members_list_raw:
         return {'success': False, 'message': f"No hay miembros en el grupo '{group_name}'."}
-    
-    log_matrix(f"Encontrados {len(members_list_raw)} miembros. Se usará el orden original de la lista de datos.")
 
-    # 1. USAR LA LISTA ORIGINAL SIN NINGÚN TIPO DE ORDENAMIENTO
-    # Esta lista determinará el orden de las FILAS Y de las COLUMNAS.
-    all_members_in_original_order = members_list_raw
+    member_info_list = sorted([
+        {
+            'full_name': f"{m.get('nome', '').strip().title()} {m.get('cognome', '').strip().upper().title()}",
+            'display_name': f"{m.get('cognome', '').strip().upper()}, {m.get('nome', '').strip().title()}",
+            'iniz': m.get('iniz', 'N/A').upper(),
+            'sexo': m.get('sexo', '').lower()
+        } for m in members_list_raw
+    ], key=lambda x: x['display_name'])
     
-    # El mapa de normalización sigue siendo necesario para emparejar nombres de forma robusta
-    members_map = {
-        normalizar_nombre_para_comparacion(f"{m.get('nome', '').title()} {m.get('cognome', '').title()}"): 
-        f"{m.get('nome', '').title()} {m.get('cognome', '').title()}" 
-        for m in all_members_in_original_order
-    }
+    fullname_to_index_map = {mem['full_name']: i for i, mem in enumerate(member_info_list)}
+    norm_to_fullname_map = { normalizar_nombre_para_comparacion(mem['full_name']): mem['full_name'] for mem in member_info_list }
     
-    # Crear las listas para las columnas y las claves A PARTIR de la lista original
-    member_initials_for_cols = [m.get('iniz','N/A').upper() for m in all_members_in_original_order]
-    member_fullnames_for_key = [f"{m.get('nome','').strip().title()} {m.get('cognome','').strip().title()}" for m in all_members_in_original_order]
-    header_for_table = ['Nominador'] + member_initials_for_cols + ['TOTAL Hechas']
-    log_matrix(f"Cabecera generada respetando el orden de datos: {header_for_table}")
-    
-    # 2. Calcular la matriz de elecciones usando normalización
+    source_responses = network_data_override if network_data_override is not None else questionnaire_responses_data
     election_matrix = collections.defaultdict(lambda: collections.defaultdict(int))
-    for (resp_inst, resp_grp, nominator_orig), member_responses in questionnaire_responses_data.items():
+    
+    for (resp_inst, resp_grp, nominator_orig), member_responses in source_responses.items():
         if resp_inst == institution_name and resp_grp == group_name:
-            nominator_norm = normalizar_nombre_para_comparacion(nominator_orig)
-            nominator_key_final = members_map.get(nominator_norm)
-            
-            if not nominator_key_final:
-                log_matrix(f"AVISO (Cálculo Matriz): Nominador '{nominator_orig}' no encontrado en el mapa. Se omite.")
-                continue
+            nominator_fullname = norm_to_fullname_map.get(normalizar_nombre_para_comparacion(nominator_orig))
+            if not nominator_fullname: continue
 
-            for question_key in selected_data_keys_list:
-                if question_key in member_responses:
-                    for nominee_orig in member_responses[question_key]:
-                        nominee_norm = normalizar_nombre_para_comparacion(nominee_orig)
-                        nominee_key_final = members_map.get(nominee_norm)
-                        if nominee_key_final:
-                            election_matrix[nominator_key_final][nominee_key_final] += 1
-                        else:
-                            log_matrix(f"AVISO (Cálculo Matriz): Nominado '{nominee_orig}' no encontrado en el mapa.")
-    
-    # 3. Construir la tabla usando el orden original para todo
+            for question_key, nominees in member_responses.items():
+                # --- INICIO DE LA CORRECCIÓN ---
+                # Si estamos usando datos estándar (NO override), filtramos por las preguntas seleccionadas.
+                # Si SÍ estamos usando un override, asumimos que ya viene filtrado y procesamos todas sus claves.
+                if network_data_override is None:
+                    if question_key not in selected_data_keys_list:
+                        continue
+                # --- FIN DE LA CORRECCIÓN ---
+
+                for nominee_orig in nominees:
+                    nominee_fullname = norm_to_fullname_map.get(normalizar_nombre_para_comparacion(nominee_orig))
+                    if nominee_fullname:
+                        election_matrix[nominator_fullname][nominee_fullname] += 1
+
+    header_for_table = ['Nominador'] + [mem['iniz'] for mem in member_info_list] + ['TOTAL Hechas']
     data_for_table = []
-    row_colors_for_gui = []
-    grand_column_totals = [0] * len(all_members_in_original_order)
-    
-    femenino_members = [m for m in all_members_in_original_order if m.get('sexo', '').lower() == 'femenino']
-    masculino_members = [m for m in all_members_in_original_order if m.get('sexo', '').lower() == 'masculino']
-    other_members = [m for m in all_members_in_original_order if m.get('sexo', '').lower() not in ['femenino', 'masculino']]
-    
-    groups_by_gender_ordered = [('Femenino', femenino_members), ('Masculino', masculino_members), ('Otro/Desconocido', other_members)]
-    
-    current_row_index = 0
-    for gender_name, members_in_group in groups_by_gender_ordered:
-        if members_in_group:
-            row_colors_for_gui.append((current_row_index, '#E6F2FF'))
-            data_for_table.append([f"--- {gender_name} ---"] + [''] * (len(header_for_table) - 1))
-            current_row_index += 1
+    grand_column_totals = collections.defaultdict(int)
 
-            group_column_totals = [0] * len(all_members_in_original_order)
-            group_total_made_by_gender = 0
-            
-            for nominator_data in members_in_group:
-                nominator_key = f"{nominator_data.get('nome','').strip().title()} {nominator_data.get('cognome','').strip().title()}"
-                display_name = f"{nominator_data.get('cognome','').strip().title()}, {nominator_data.get('nome','').strip().title()}"
-                row_data = [display_name]
-                row_total_made_by_member = 0
+    female_members_info = [m for m in member_info_list if m['sexo'] == 'femenino']
+    male_members_info = [m for m in member_info_list if m['sexo'] != 'femenino']
+
+    def _process_gender_group(members_info, group_name):
+        rows = []
+        if not members_info: return rows
+        
+        rows.append([f'---{group_name}---'] + [''] * (len(header_for_table) - 1))
+        
+        column_subtotals = collections.defaultdict(int)
+        total_hechas_subtotal = 0
+
+        for member_info in members_info:
+            data_cells = []
+            row_total_made = 0
+            nominator_index = fullname_to_index_map.get(member_info['full_name'])
+
+            for j, nominee_info in enumerate(member_info_list):
+                count = election_matrix[member_info['full_name']].get(nominee_info['full_name'], 0)
                 
-                for i, nominee_key in enumerate(member_fullnames_for_key):
-                    if nominator_key == nominee_key:
-                        row_data.append('X')
+                is_diagonal = (j == nominator_index)
+                if is_diagonal:
+                    # Si la opción de auto-selección está activada...
+                    if allow_self_on_diagonal:
+                        # ...muestra el conteo (o una celda vacía si es cero).
+                        cell_value = str(count) if count > 0 else ''
                     else:
-                        count = election_matrix[nominator_key].get(nominee_key, 0)
-                        row_data.append(str(count) if count > 0 else '')
-                        row_total_made_by_member += count
-                        group_column_totals[i] += count
-                        grand_column_totals[i] += count
+                        # Si no está activada, muestra la 'X' tradicional.
+                        cell_value = 'X'
+                else:
+                    # El comportamiento para las celdas no diagonales no cambia.
+                    cell_value = str(count) if count > 0 else ''
                 
-                row_data.append(row_total_made_by_member)
-                data_for_table.append(row_data)
-                current_row_index += 1
-                group_total_made_by_gender += row_total_made_by_member
+                data_cells.append(cell_value)
+                
+                if not is_diagonal:
+                    row_total_made += count
+                    column_subtotals[nominee_info['full_name']] += count
+                    grand_column_totals[nominee_info['full_name']] += count
+            
+            final_row = [member_info['display_name']] + data_cells + [row_total_made]
+            rows.append(final_row)
+            total_hechas_subtotal += row_total_made
+        
+        subtotal_row = [f'Total por {group_name} (Hechas)']
+        for nominee_info in member_info_list:
+            subtotal_row.append(column_subtotals[nominee_info['full_name']])
+        subtotal_row.append(total_hechas_subtotal)
+        rows.append(subtotal_row)
+        return rows
 
-            row_colors_for_gui.append((current_row_index, '#F0F0F0'))
-            data_for_table.append([f"Total por {gender_name} (Hechas)"] + group_column_totals + [group_total_made_by_gender])
-            log_matrix(f"Subtotales para {gender_name}: Columnas={group_column_totals}, Total Hechas={group_total_made_by_gender}")
-            current_row_index += 1
+    data_for_table.extend(_process_gender_group(female_members_info, "Femenino"))
+    data_for_table.extend(_process_gender_group(male_members_info, "Masculino"))
 
-    grand_total_selections = sum(grand_column_totals)
-    row_colors_for_gui.append((current_row_index, '#E0E0E0'))
-    data_for_table.append(['TOTAL GENERAL Recibidas'] + grand_column_totals + [grand_total_selections])
-    log_matrix(f"Totales Generales: Columnas={grand_column_totals}, Total Final={grand_total_selections}")
+    total_row = ['TOTAL GENERAL Recibidas']
+    total_general = sum(grand_column_totals.values())
+    for nominee_info in member_info_list:
+        total_row.append(grand_column_totals[nominee_info['full_name']])
+    total_row.append(total_general)
+    data_for_table.append(total_row)
     
-    html_output = _generate_html_from_data(header_for_table, data_for_table)
-
-    return {
-        'success': True,
-        'header': header_for_table,
-        'data': data_for_table,
-        'row_colors': row_colors_for_gui,
-        'html': html_output,
-        'message': "Datos generados."
-    }
+    return { 'success': True, 'header': header_for_table, 'data': data_for_table }
 
 def _generate_html_from_data(header, data):
     """Función auxiliar para crear una tabla HTML simple a partir de datos."""
     html = "<table border='1' style='border-collapse: collapse; font-family: sans-serif; font-size: 10px;'>"
-    # Header
     html += "<thead><tr>"
     for h in header:
         html += f"<th style='padding: 4px; background-color: #e0e0e0;'>{h}</th>"
     html += "</tr></thead>"
-    # Body
     html += "<tbody>"
     for row in data:
         html += "<tr>"
@@ -141,19 +139,94 @@ def _generate_html_from_data(header, data):
             style = "padding: 4px; text-align: center;"
             if i == 0:
                 style += " text-align: left; background-color: #f2f2f2; font-weight: bold;"
-            if "---" in str(cell):
-                html += f"<td colspan='{len(header)}' style='background-color: #cce5ff; font-weight: bold; padding: 5px;'>{cell.replace('---', '').strip()}</td>"
-                break 
             if "Total" in str(cell):
                  style += " background-color: #e9e9e9; font-weight: bold;"
-
             html += f"<td style='{style}'>{cell}</td>"
         html += "</tr>"
     html += "</tbody></table>"
     return html
 
-# Las funciones on_sociomatrix_..._click que manejaban los checkboxes son eliminadas.
-# La GUI se encargará de gestionar el estado de los checkboxes y pasar la lista
-# de data_keys seleccionados a `handle_draw_sociomatrix_data`.
+def generate_html_for_matrix(header, data, cell_color_map=None, legend_html=None):
+    """
+    Convierte los datos de la matriz en una tabla HTML bien formateada y con estilos.
+    Acepta un mapa de colores para las celdas y un bloque HTML para la leyenda.
+    """
+    # Estilos CSS para que la tabla se vea profesional y sea fácil de usar.
+    styles = """
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 20px; background-color: #fdfdfd; }
+        h2, h3 { color: #333; }
+        .matrix-container { overflow-x: auto; border: 1px solid #ddd; }
+        table { border-collapse: collapse; width: auto; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); white-space: nowrap; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: center; }
+        
+        /* Encabezado fijo al hacer scroll vertical */
+        thead th { background-color: #e9ecef; font-weight: bold; position: sticky; top: 0; z-index: 10; }
+        
+        /* Primera columna (Nominador) fija al hacer scroll horizontal */
+        td.nominador { text-align: left; font-weight: bold; background-color: #f8f9fa; position: sticky; left: 0; z-index: 5; }
+        
+        /* La esquina superior izquierda debe estar por encima de todo */
+        thead th:first-child { position: sticky; left: 0; z-index: 15; }
+
+        /* Estilos para filas especiales */
+        tr.gender-header td { background-color: #dce6f2; font-weight: bold; text-align: left; }
+        tr.total-row td { background-color: #f0f0f0; font-weight: bold; }
+
+        /* Estilos para la leyenda */
+        .legend { border: 1px solid #ccc; padding: 15px; margin-top: 20px; margin-bottom: 30px; background-color: #f9f9f9; max-width: 650px; border-radius: 5px;}
+        .legend h4 { margin-top: 0; }
+        .legend-item { display: inline-block; margin: 2px 10px 2px 0; }
+        .legend-color-box { width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 5px; border: 1px solid #777; }
+    </style>
+    """
+    
+    html = f"<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><title>Matriz Sociométrica</title>{styles}</head><body>"
+    
+    # Insertar la leyenda si se proporcionó
+    if legend_html:
+        html += legend_html
+    
+    html += "<h2>Matriz Sociométrica</h2>"
+    
+    # Contenedor para permitir el scroll horizontal en tablas anchas
+    html += "<div class='matrix-container'><table>"
+    
+    # Construir el encabezado de la tabla
+    html += "<thead><tr>"
+    for i, h in enumerate(header):
+        html += f"<th>{h}</th>"
+    html += "</tr></thead>"
+    
+    # Construir el cuerpo de la tabla
+    html += "<tbody>"
+    for row_data in data:
+        row_class = ""
+        first_cell_val = str(row_data[0])
+        
+        # Detectar y formatear filas de encabezado de género
+        if '---' in first_cell_val:
+            row_class = "gender-header"
+            clean_text = first_cell_val.replace("---", "")
+            html += f'<tr class="{row_class}"><td colspan="{len(header)}">{clean_text}</td></tr>'
+            continue # Saltar al siguiente ciclo de la fila
+        # Detectar y formatear filas de totales
+        elif 'Total' in first_cell_val:
+            row_class = "total-row"
+
+        html += f'<tr class="{row_class}">'
+        for i, cell in enumerate(row_data):
+            cell_class = "nominador" if i == 0 else ""
+            
+            # Aplicar color de fondo si se proporciona un mapa de colores y el valor coincide
+            bg_color_style = ""
+            if cell_color_map and str(cell) in cell_color_map:
+                bg_color_style = f"background-color: {cell_color_map[str(cell)]};"
+
+            html += f'<td class="{cell_class}" style="{bg_color_style}">{cell}</td>'
+        html += "</tr>"
+
+    html += "</tbody></table></div></body></html>"
+    return html
 
 print("handlers_sociomatrix.py refactorizado y listo para su uso en la aplicación de escritorio.")
