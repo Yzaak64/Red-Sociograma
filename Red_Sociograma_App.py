@@ -430,6 +430,66 @@ def create_layout_sociomatrix(institution_name, group_name):
     
     return [[sg.Column(layout, expand_x=True, expand_y=True)]]
 
+def create_layout_diana(institution_name, group_name, relation_options):
+    """
+    Crea el layout para la ventana de Análisis Gráfico en Diana.
+    """
+    # --- Columna Izquierda: Controles ---
+    aggregation_options = [
+        "Diana de Afinidad (Popularidad)",
+        "Diana de Distancia (CIVSOC)",
+        "Diana de Precisión (Global)",
+        "Red de Meta-Percepción (SELF)",
+    ]
+    participant_options = sociogram_utils.get_participant_options(app_state, app_data, hutils)
+
+    analysis_frame = sg.Frame("Modo de Análisis", [
+        [sg.Combo(aggregation_options, default_value=aggregation_options[0], key='-DIANA_AGGREGATION_MODE-', readonly=True, enable_events=True, expand_x=True)],
+        [sg.Text("Miembro Foco (para CIVSOC):", size=(25,1))],
+        [sg.Combo([p[0] for p in participant_options if p[1] is not None], key='-DIANA_PERCEIVER-', readonly=True, disabled=True, expand_x=True)]
+    ], expand_x=True)
+
+    q_layout_rows = [[sg.Checkbox(opt['label'], key=f"-DIANA_Q__{opt['data_key']}__", default=True)] for opt in relation_options] if relation_options else [[sg.Text("No hay preguntas.")]]
+    questions_frame = sg.Frame("Preguntas a Incluir", [
+        [sg.Column(q_layout_rows, size=(380, 150), scrollable=True, vertical_scroll_only=True)],
+        [sg.Button("Todas", k='-DIANA_ALL-'), sg.Button("Ninguna", k='-DIANA_NONE-'), sg.Button("Positivas", k='-DIANA_POS-'), sg.Button("Negativas", k='-DIANA_NEG-')]
+    ], expand_x=True)
+
+    options_frame = sg.Frame("Opciones de Visualización", [
+        [sg.Checkbox("Mostrar Líneas de Elección (solo en modo Afinidad)", key='-DIANA_SHOW_LINES-', default=True)]
+    ], expand_x=True)
+
+    left_column = sg.Column([
+        [analysis_frame],
+        [questions_frame],
+        [options_frame],
+        [sg.Button("Generar/Actualizar Diana", key='-DIANA_GENERATE-')],
+        [sg.VPush()] # Empuja los botones de abajo al fondo
+    ], vertical_alignment='top')
+
+    # --- Columna Derecha: Visualización ---
+    image_viewer = sg.Column([
+        [sg.Image(key='-DIANA_IMAGE-', background_color='white')]
+    ], key='-DIANA_IMAGE_CONTAINER-', justification='center', expand_x=True, expand_y=True, background_color='white')
+
+    # --- Layout Principal ---
+    layout = [
+        [sg.Text(f"Análisis Gráfico en Diana: {group_name} ({institution_name})", font=("Helvetica", 16))],
+        [sg.HorizontalSeparator()],
+        [left_column, sg.VSeperator(), sg.Column([[image_viewer]], expand_x=True, expand_y=True)],
+        [sg.HorizontalSeparator()],
+        [
+            sg.Text("Zoom:", pad=((10,0),0)),
+            sg.Slider(range=(25, 200), default_value=100, orientation='h', size=(30, 15), key='-DIANA_ZOOM_SLIDER-', enable_events=True),
+            sg.Text("100%", key='-DIANA_ZOOM_TEXT-'),
+            sg.Push(),
+            sg.Button("Guardar Imagen (PNG)", key='-DIANA_SAVE-', disabled=True),
+            sg.Button("Volver a Grupos", key='-BACK_TO_GROUPS-')
+        ]
+    ]
+
+    return layout
+
 def create_layout_sociogram(institution_name, group_name, relation_options, participant_options):
     """
     Versión FINAL. Incluye todos los controles de la interfaz, incluyendo el resaltado de líderes
@@ -1785,4 +1845,3 @@ if __name__ == "__main__":
     except Exception as e:
         error_details = f'Error no controlado en Sociograma:\n\n{e}\n\nTraceback:\n{traceback.format_exc()}'
         sg.popup_error(error_details, title="Error Fatal en Sociograma")
-
